@@ -7,9 +7,8 @@ class Month
 	String          label          = 'Empty';
 	String          description    = 'None selected';
 
-	int              _numberOfDays = 30;
 
-	List<Day>        SpecialDays   = new List<Day>();
+	List<Day>        days   = new List<Day>();
 	int              number        = 0;
 	bool             initialized   = false;
 
@@ -22,19 +21,20 @@ class Month
 		description = newDescription;
 		initialized = true;
 
+		for(int calendarDay=1;calendarDay<=30;calendarDay++)
+		{
+			Day newDay = new Day();
+			await newDay.initializeDay(calendarDay.toString());
+			days.add(newDay);
+		}
+
 		return initialized;
 
 	}
 
 	void addSpecialDay(Day specialDay)
 	{
-		SpecialDays.add(specialDay);
-		_numberOfDays = 30 + SpecialDays.length;
-	}
-
-	int numberOfDays()
-	{
-		return _numberOfDays;
+		days.add(specialDay);
 	}
 
 }
@@ -55,7 +55,7 @@ class Year
 
 	int              currentYear;
 	List<Month>      months      = new List<Month>();
-	List<Day>        specialDays = new List<Day>();
+	List<Day>        days        = new List<Day>();
 	bool             initialized = false;
 
 	Year();
@@ -63,8 +63,9 @@ class Year
 	Future<bool> InitYear(int yearNumber) async
 	{
 		currentYear = yearNumber;
-		Month       _month;
-		Day  _specialDay;
+
+		Month _month;
+		Day   _specialDay;
 
 		_month =  new Month();
 		await _month.initMonth(1, 'Hammer', 'Tiefwinter');
@@ -103,6 +104,7 @@ class Year
 		_month.addSpecialDay(_specialDay);
 		if(yearNumber%4==0)
 		{
+			_specialDay = new Day();
 			await _specialDay.initializeDay('Schildtreffen');
 			_month.addSpecialDay(_specialDay);
 		}
@@ -209,6 +211,7 @@ class MainDaySelectedEvent extends MainEvent
 
 class MainBloc
 {
+
 	MainProperties mainProperties = new MainProperties();
 
 	final _mainController = StreamController<MainProperties>.broadcast();
@@ -220,6 +223,7 @@ class MainBloc
 			_mainEventController.sink;
 	MainBloc()
 	{
+		print('created new MainBloc');
 		_mainEventController.stream.listen(_mapEventToState);
 	}
 	void poke(BuildContext context)
@@ -269,8 +273,6 @@ class MainBloc
 		{
 			mainProperties.backgroundImage = 'assets/autumn.png';
 		}
-		print('Selected Year = '  + mainProperties.currentYear.toString());
-		print('Selected Month = ' + mainProperties.currentMonth.toString());
 
 		_mainController.add(mainProperties);
 	}
@@ -278,17 +280,9 @@ class MainBloc
 	Future<bool> _mapEventToYearSelected(MainYearSelectedEvent mainYearSelectedEvent) async
 	{
 		int yearToLoad = mainYearSelectedEvent.newYear;
-		print('Year to load -' + yearToLoad.toString() + '-');
 		bool existsAlready = false;
 		for(int i=0; i < mainProperties.years.length; i++)
 		{
-			print('Years already initialized :' + mainProperties.years[i].currentYear.toString() );
-			print('looking if year already exists the old fashioned way:' +
-					(mainProperties.years[i].currentYear==yearToLoad).toString());
-			print('looking by .contains ' + (mainProperties.years.contains
-				(
-							(aYear) => aYear.currentYear == yearToLoad
-			).toString()));
 			if(mainProperties.years[i].currentYear==yearToLoad)
 			{
 				existsAlready = true;
@@ -303,7 +297,6 @@ class MainBloc
 			Year _newYear = new Year();
 			await _newYear.InitYear(yearToLoad);
 			mainProperties.years.add(_newYear);
-			print('Initialized ' + yearToLoad.toString() + ' ' + mainProperties.years.length.toString());
 		}
 
 		_mainController.add(mainProperties);

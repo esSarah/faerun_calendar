@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'support_routing.dart' as router;
 import 'main_bloc.dart';
-import 'package:carousel_slider/carousel_controller.dart';
-import 'package:carousel_slider/carousel_options.dart';
-import 'package:carousel_slider/carousel_slider.dart';
 
 class MonthView extends StatefulWidget
 {
@@ -147,18 +144,41 @@ class MonthViewState extends State<MonthView>
 												[
 													Column
 													(
-														children : tenDay(  1, x, 380 * xy)
+														children : tenDay(thisYear, _month,  1, x, 380 * xy)
 													),
 													Column
 													(
-														children : tenDay( 11, x, 380 * xy)
+														children : tenDay(thisYear, _month, 11, x, 380 * xy)
 													),
 													Column
 													(
-														children : tenDay( 21, x, 380 * xy)
+														children : tenDay(thisYear, _month, 21, x, 380 * xy)
 													),
 												],
+											),
+											(_month.days.length>30)
+											?
+											(_month.days.length==31)
+													?
+													// one special day
+											day(thisYear, _month, 30, _month.days[30].label, x /  1.5 - 80 * xy, 30)
+											:
+													// two special days
+											Column
+											(
+												children: <Widget>
+												[
+													day(thisYear, _month, 30, _month.days[30].label, x  - 150 * xy, 30),
+													day(thisYear, _month, 31, _month.days[31].label, x  - 150 * xy, 30)
+												],
 											)
+											:
+											// nothing
+											Container
+											(
+												width  : 50* xy ,
+												height : 10* xy ,
+											),
 										],
 									),
 
@@ -170,7 +190,7 @@ class MonthViewState extends State<MonthView>
 		);
 	}
 
-	List<Widget> tenDay(int startday, double width, double length)
+	List<Widget> tenDay(Year year, Month month, int startday, double width, double length)
 	{
 		List<Widget> newTenday = new List<Widget>();
 		for
@@ -184,7 +204,10 @@ class MonthViewState extends State<MonthView>
 			(
 				day
 				(
-					currentDay,
+					year,
+					month,
+					currentDay - 1, // index, not shown day no.
+					month.days[currentDay-1].label,
 					(
 							width /  3 - 80 * xy
 					),
@@ -197,7 +220,7 @@ class MonthViewState extends State<MonthView>
 		return newTenday;
 	}
 
-	Container day(int number, double width, double height)
+	Container day(Year year, Month month, int index, String label, double width, double height)
 	{
 		return Container
 		(
@@ -216,31 +239,35 @@ class MonthViewState extends State<MonthView>
 						[
 							Container
 							(
-								width  : 50* xy ,
-								height : 10* xy ,
+								width  : 50 * xy ,
+								height : 10 * xy ,
 							),
-							Container
+							Hero
 							(
-								width  : width,
-								height : height,
-								color  : Color.fromARGB(230, 240, 180, 100),
-								child  : InkWell
+								tag: 'Day' + year.currentYear.toString() + month.label + index.toString(),
+								child: Container
 								(
-									onTap: ()
-									{
-										Navigator.pushNamed(context, 'Day', arguments: number);
-									},
-									child : Center
+									width  : width,
+									height : height,
+									color  : Color.fromARGB(230, 240, 180, 100),
+									child  : InkWell
 									(
-										child : Text
+										onTap: ()
+										{
+											Navigator.pushNamed(context, 'Day',  arguments: new router.DayArguments( year, month, index, mainBloc));
+										},
+										child : Center
 										(
-											number.toString(),
-											style: TextStyle
+											child : Text
 											(
-												fontSize   : 30 * xy,
-												fontFamily : 'NugieRomantic',
-												fontWeight : FontWeight.w300,
-											)
+												label,
+												style: TextStyle
+												(
+													fontSize   : 30 * xy,
+													fontFamily : 'NugieRomantic',
+													fontWeight : FontWeight.w300,
+												)
+											),
 										),
 									),
 								),
