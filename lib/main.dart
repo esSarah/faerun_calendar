@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'support_routing.dart' as router;
+import 'support_sizing.dart'  as sizing;
+
 import 'main_bloc.dart';
 import 'month_widget.dart';
 import 'package:carousel_slider/carousel_options.dart';
@@ -70,9 +72,20 @@ class _MyHomePageState extends State<MyHomePage>
 {
   MainBloc mainBloc;
 
-  double   x           = 0;
-  double   y           = 0;
-  double   xy          = 0;
+  double   x  = 0;
+  double   xf = 0;
+  double   y  = 0;
+  double   yf = 0;
+  double   xy = 0;
+  double   xr = 0;
+  double   yr = 0;
+
+  sizing.Proportions proportions = new sizing.Proportions();
+
+  // will be 5% of portrait mode height
+  double   headerHeight = 0;
+
+  bool isPortrait = true;
 
   @override
   Widget build(BuildContext context)
@@ -101,11 +114,28 @@ class _MyHomePageState extends State<MyHomePage>
         }
         else
         {
-          x  = state.data.currentWidth;
-          y  = state.data.currentHeight;
-          xy = state.data.multiplyWidthBy;
 
+          if(isPortrait != (MediaQuery.of(context).orientation==Orientation.portrait))
+          {
+            mainBloc.poke(context);
+          }
+          isPortrait = (MediaQuery.of(context).orientation==Orientation.portrait);
+
+          proportions.refreshProportions(context);
+
+          x  = proportions.x;
+          y  = proportions.y;
+          xy = proportions.xy;
+
+          headerHeight = 32;
+
+          proportions.monthViewX = x *.95;
+          proportions.monthViewY = y - (100);
+
+          //currentOrientation = state.data.currentOrientation;
           print('x: ' + x.toString() + ', y: ' + y.toString() + ', xy: ' + xy.toString());
+          print('Direction=' + MediaQuery.of(context).orientation.toString());
+          print('Device PixelRatio=' + MediaQuery.of(context).devicePixelRatio.toString());
 
           return Scaffold
           (
@@ -116,7 +146,7 @@ class _MyHomePageState extends State<MyHomePage>
                 Container
                 (
                   width  : 1.0,
-                  height : 30.0 * xy,
+                  height : headerHeight,
                 ),
                 Stack
                 (
@@ -126,13 +156,18 @@ class _MyHomePageState extends State<MyHomePage>
                     (
                       children: <Widget>
                       [
-                        Container(height: 100 * xy, width : 1,),
+                        Container
+                        (
+                          height:
+                            100,
+                          width : 1,
+                        ),
                         Image
                         (
                           image          :
                             AssetImage(state.data.backgroundImage),
-                          width          : x * xy,
-                          height         : y - (150*xy),
+                          width          : x,
+                          height         : y - (100 + y * .1),
                           gaplessPlayback: false,
                         ),
                       ],
@@ -142,7 +177,7 @@ class _MyHomePageState extends State<MyHomePage>
                       itemCount: 120000,
                       options: CarouselOptions
                       (
-                        height            : y-(100*xy),
+                        height            : y - (100),
                         viewportFraction  : .95,
                         initialPage       : 17760,
                         aspectRatio       : xy,
@@ -169,10 +204,11 @@ class _MyHomePageState extends State<MyHomePage>
                           child:
                           MonthView
                           (
-                              mainBloc : mainBloc,
-                              year     : (index/12).floor(),
-                              month    : index-((index/12).floor()*12))
-                          // Text(index.toString()),
+                            mainBloc    : mainBloc,
+                            year        : (index/12).floor(),
+                            month       : index-((index/12).floor()*12),
+                            proportions : proportions,
+                          )
                         );
                       },
                     ),

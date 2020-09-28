@@ -157,9 +157,17 @@ class MainProperties
 	double currentWidth    = 0;
 	double currentHeight   = 0;
 
-	// Design with for Pixel 2 emulator
-	// as help
+	double xFactor = 0;
+	double yFactor = 0;
+
+	double xReal = 0;
+	double yReal = 0;
+
+	// Design width and height for Pixel 2 emulator
+	// as orientation
 	double originalWidth   = 411.42857142857144;
+	double originalHeight  = 683.4285714285714;
+
 	double multiplyWidthBy = 1;
 
 	mainStates  status     = mainStates.isInitializing;
@@ -231,12 +239,23 @@ class MainBloc
 		mainProperties.currentHeight   = MediaQuery.of(context).size.height;
 		mainProperties.currentWidth    = MediaQuery.of(context).size.width;
 		mainProperties.multiplyWidthBy =
+				mainProperties.currentWidth / mainProperties.currentHeight;
+		mainProperties.xFactor         =
 				mainProperties.currentWidth / mainProperties.originalWidth;
+		mainProperties.yFactor         =
+				mainProperties.currentHeight / mainProperties.originalHeight;
+
+		mainProperties.xReal =
+			mainProperties.currentWidth *
+			MediaQuery.of(context).devicePixelRatio;
+
+		mainProperties.yReal =
+				mainProperties.currentHeight *
+				MediaQuery.of(context).devicePixelRatio;
+
 		mainProperties.status = mainStates.isUserSelected; // todo: delete when implement
 		_mainController.add(mainProperties);
 	}
-
-
 
 	Future<bool> _mapEventToState(MainEvent event) async
 	{

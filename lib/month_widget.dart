@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'support_routing.dart' as router;
+import 'support_sizing.dart'  as sizing;
 import 'main_bloc.dart';
 
 class MonthView extends StatefulWidget
@@ -7,21 +8,24 @@ class MonthView extends StatefulWidget
 	const MonthView
 	(
 		{
-			Key      key,
-			MainBloc mainBloc,
-			int      year,
-			int      month,
+			Key                key,
+			MainBloc           mainBloc,
+			int                year,
+			int                month,
+			sizing.Proportions proportions,
 		}
 	)  :
-	mainBloc = mainBloc,
-	year     = year,
-	month    = month,
+	mainBloc    = mainBloc,
+	year        = year,
+	month       = month,
+	proportions = proportions,
 
 	super(key: key);
 
-	final MainBloc mainBloc;
-	final int      year;
-	final int      month;
+	final MainBloc           mainBloc;
+	final int                year;
+	final int                month;
+	final sizing.Proportions proportions;
 
 
 	@override
@@ -35,14 +39,68 @@ class MonthViewState extends State<MonthView>
 	double   y  = 0;
 	double   xy = 0;
 
-	Year thisYear;
+	double sheetX = 0;
+	double sheetY = 0;
 
-	Month _month;
+	double breakX = 0;
+	double breakY = 0;
+
+	Year     thisYear;
+
+	bool     isPortrait = true;
+
+	double textBlockHeight = 100;
+
+	Month    _month;
 	MainBloc mainBloc;
 
 	Widget build(BuildContext context)
 	{
 		mainBloc = widget.mainBloc;
+		x        = widget.proportions.monthViewX;
+		y        = widget.proportions.monthViewY;
+		// xy       = widget.proportions.xy;
+		print('Inside x: ' + x.toString() + ' y: ' + y.toString());
+		isPortrait=(x<y);
+		if(isPortrait)
+		{
+			textBlockHeight = 100;
+
+			//sheetX = ((x-textBlockHeight)/3)*.75;
+			sheetX = (x/3)*.75;
+			sheetY = ((y-textBlockHeight)/11)*.75;
+
+			//breakX = ((x-textBlockHeight)/3)*.15;
+			breakX = (x/3)*.15;
+			breakY = ((y-textBlockHeight)/11)*.15;
+			if(sheetX>sheetY*1.5)
+			{
+				breakX+=sheetX-(sheetY*1.5);
+				sheetX = sheetY*1.5;
+			}
+		}
+		else
+		{
+			textBlockHeight = 70;
+
+			sheetX = ((x-textBlockHeight)/10)*.75;
+			sheetY = ((y-textBlockHeight)/4)*.75;
+
+			breakX = ((x-textBlockHeight)/10)*.15;
+			breakY = ((y-textBlockHeight)/4)*.15;
+			if(sheetX<sheetY)
+			{
+				breakY+=(sheetY-sheetX);
+				sheetY = sheetX;
+			}
+		}
+		print('SheetX: ' + sheetX.toString() + ' sheetY: ' + sheetY.toString());
+
+		print(isPortrait
+				?
+		(sheetX*3)+(2*breakX)
+				:
+		(sheetX*10)-(9*breakX));
 
 
 		return StreamBuilder
@@ -102,87 +160,217 @@ class MonthViewState extends State<MonthView>
 					(
 						children: <Widget>
 						[
-							Text
+							isPortrait ?
+							Column
 							(
-								_month.label,
-								style: TextStyle
+								children: <Widget>
+								[
+									Text
+									(
+										_month.label,
+										style: TextStyle
+										(
+											fontSize   : 40,
+											fontFamily : 'NugieRomantic',
+											fontWeight : FontWeight.w300,
+										)
+									),
+									Text
+									(
+										widget.year.toString(),
+										style: TextStyle
+										(
+											fontSize   : 40,
+											fontFamily : 'NugieRomantic',
+											fontWeight : FontWeight.w300,
+										)
+									),
+									Text
+									(
+										_month.description,
+										style: TextStyle
+										(
+											fontSize   : 20,
+											fontFamily : 'NugieRomantic',
+											fontWeight : FontWeight.w300,
+										)
+									),
+								],
+							)
+							:
+							Container
+							(
+								alignment: Alignment.topCenter,
+								height: 70,
+								child: Stack
 								(
-									fontSize   : 40,
-									fontFamily : 'NugieRomantic',
-									fontWeight : FontWeight.w300,
-								)
+									children: <Widget>
+									[
+										Container
+										(
+											alignment: Alignment.topCenter,
+											child:
+											Text
+											(
+												_month.label +', ' + widget.year.toString(),
+												textAlign: TextAlign.center,
+												style: TextStyle
+												(
+													fontSize   : 40,
+													fontFamily : 'NugieRomantic',
+													fontWeight : FontWeight.w300,
+												)
+											),
+										),
+										Column
+										(
+											children: <Widget>
+											[
+												Container
+												(
+													height:40,
+												),
+												Text
+												(
+													_month.description,
+														textAlign: TextAlign.start,
+													style: TextStyle
+														(
+														fontSize   : 20,
+														fontFamily : 'NugieRomantic',
+														fontWeight : FontWeight.w300,
+													)
+												),
+											],
+										),
+									],
+								),
 							),
-							Text
+
+
+							Center
 							(
-								widget.year.toString(),
-								style: TextStyle
+								child:
+								isPortrait
+								?
+								Column
 								(
-									fontSize   : 40,
-									fontFamily : 'NugieRomantic',
-									fontWeight : FontWeight.w300,
+									children: <Widget>
+									[
+										Row
+										(
+											mainAxisAlignment: MainAxisAlignment.center,
+											children: <Widget>
+											[
+												Column
+												(
+													children : tenDay(thisYear, _month,  1)
+												),
+												Column
+												(
+													children : tenDay(thisYear, _month, 11)
+												),
+												Column
+												(
+													children : tenDay(thisYear, _month, 21)
+												),
+											],
+										),
+									],
 								)
-							),
-							Text
-							(
-								_month.description,
-								style: TextStyle
+								:
+
+								Column
 								(
-									fontSize   : 20,
-									fontFamily : 'NugieRomantic',
-									fontWeight : FontWeight.w300,
-								)
+									children: <Widget>
+									[
+										Row
+										(
+											mainAxisAlignment: MainAxisAlignment.center,
+											children : tenDay(thisYear, _month,  1)
+										),
+										Row
+										(
+											mainAxisAlignment: MainAxisAlignment.center,
+											children : tenDay(thisYear, _month, 11)
+										),
+										Row
+										(
+											mainAxisAlignment: MainAxisAlignment.center,
+											children : tenDay(thisYear, _month, 21)
+										),
+									],
+								),
+
 							),
 							Center
 							(
-									child: Column
-									(
-										children: <Widget>
-										[
-											Row
-											(
-												children: <Widget>
-												[
-													Column
-													(
-														children : tenDay(thisYear, _month,  1, x, 380 * xy)
-													),
-													Column
-													(
-														children : tenDay(thisYear, _month, 11, x, 380 * xy)
-													),
-													Column
-													(
-														children : tenDay(thisYear, _month, 21, x, 380 * xy)
-													),
-												],
-											),
-											(_month.days.length>30)
-											?
-											(_month.days.length==31)
-													?
-													// one special day
-											day(thisYear, _month, 30, _month.days[30].label, x /  1.5 - 80 * xy, 30)
-											:
-													// two special days
-											Column
-											(
-												children: <Widget>
-												[
-													day(thisYear, _month, 30, _month.days[30].label, x  - 150 * xy, 30),
-													day(thisYear, _month, 31, _month.days[31].label, x  - 150 * xy, 30)
-												],
-											)
-											:
-											// nothing
-											Container
-											(
-												width  : 50* xy ,
-												height : 10* xy ,
-											),
-										],
-									),
-
-							)
+								child:
+								(_month.days.length>30)
+								?
+									(_month.days.length==31)
+									?
+								// one special day
+										Row
+										(
+											mainAxisAlignment: MainAxisAlignment.center,
+											children: <Widget>
+											[
+												day
+												(
+													thisYear,
+													_month,
+													30,
+													_month.days[30].label,
+														isPortrait
+																?
+														(sheetX*3)+(2*breakX)
+																:
+														(sheetX*10)+(9*breakX)
+												),
+											]
+										)
+										:
+								// two special days
+										Row
+										(
+											mainAxisAlignment: MainAxisAlignment.center,
+											children: <Widget>
+											[
+												day
+												(
+													thisYear,
+													_month,
+													30,
+													_month.days[30].label,
+													isPortrait
+															?
+													(sheetX*1.5)+(.25*breakX)
+															:
+													(sheetX*5)+(4*breakX)
+												),
+												day
+												(
+													thisYear,
+													_month,
+													31,
+													_month.days[31].label,
+													isPortrait
+															?
+													(sheetX*1.5)+(.5*breakX)
+															:
+													(sheetX*5)+(4*breakX)
+												)
+											],
+										)
+										:
+								// nothing
+								Container
+								(
+									width  : 50* xy ,
+									height : 10* xy ,
+								),
+							),
 						],
 					);
 				}
@@ -190,7 +378,7 @@ class MonthViewState extends State<MonthView>
 		);
 	}
 
-	List<Widget> tenDay(Year year, Month month, int startday, double width, double length)
+	List<Widget> tenDay(Year year, Month month, int startday)
 	{
 		List<Widget> newTenday = new List<Widget>();
 		for
@@ -207,20 +395,14 @@ class MonthViewState extends State<MonthView>
 					year,
 					month,
 					currentDay - 1, // index, not shown day no.
-					month.days[currentDay-1].label,
-					(
-							width /  3 - 80 * xy
-					),
-					(
-							length / 10 * xy - 10 * xy
-					)
+					month.days[currentDay-1].label
 				)
 			);
 		}
 		return newTenday;
 	}
 
-	Container day(Year year, Month month, int index, String label, double width, double height)
+	Container day(Year year, Month month, int index, String label, [double moreWidth])
 	{
 		return Container
 		(
@@ -230,8 +412,8 @@ class MonthViewState extends State<MonthView>
 				[
 					Container
 					(
-						width  : 50* xy ,
-						height : 10* xy ,
+						width  : breakX,
+						height : breakY,
 					),
 					Row
 					(
@@ -239,16 +421,16 @@ class MonthViewState extends State<MonthView>
 						[
 							Container
 							(
-								width  : 50 * xy ,
-								height : 10 * xy ,
+								width  : breakX,
+								height : breakY,
 							),
 							Hero
 							(
 								tag: 'Day' + year.currentYear.toString() + month.label + index.toString(),
 								child: Container
 								(
-									width  : width,
-									height : height,
+									width  : (moreWidth==null)?sheetX: moreWidth,
+									height : sheetY,
 									color  : Color.fromARGB(230, 240, 180, 100),
 									child  : InkWell
 									(
@@ -263,7 +445,7 @@ class MonthViewState extends State<MonthView>
 												label,
 												style: TextStyle
 												(
-													fontSize   : 30 * xy,
+													fontSize   : sheetY*.6,
 													fontFamily : 'NugieRomantic',
 													fontWeight : FontWeight.w300,
 												)
