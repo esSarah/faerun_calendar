@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:meta/meta.dart';
 import 'package:flutter/material.dart';
+import 'character_selection_bloc.dart';
+import 'support_database.dart';
 
 class Month
 {
@@ -144,7 +146,6 @@ class Year
 enum mainStates
 {
 	isInitializing,
-
 	isUserSelected,
 }
 
@@ -170,14 +171,22 @@ class MainProperties
 
 	double multiplyWidthBy = 1;
 
-	mainStates  status     = mainStates.isInitializing;
-	String backgroundImage = 'assets/spring.png';
-	List<Year> years = new List<Year>();
+	mainStates  status          = mainStates.isInitializing;
+	String      backgroundImage = 'assets/spring.png';
+
+	List<Year>          years               = new List<Year>();
+	CharacterProperties characterProperties = new CharacterProperties();
+	DatabaseManager     db                  = new DatabaseManager();
 }
 
 abstract class MainEvent
 {
 	MainEvent([List props = const[]]);
+}
+
+class MainInitializeEvent extends MainEvent
+{
+
 }
 
 class MainChangedCharacterEvent extends MainEvent
@@ -221,6 +230,11 @@ class MainBloc
 {
 
 	MainProperties mainProperties = new MainProperties();
+	final DatabaseManager  db     = new DatabaseManager();
+	CharacterBloc          characterBloc;
+	StreamSubscription     characterBlocSubscription;
+	List<Function>         informOfPendingCharacterChange = new List<Function>();
+
 
 	final _mainController = StreamController<MainProperties>.broadcast();
 	Stream<MainProperties> get master => _mainController.stream;
@@ -229,11 +243,80 @@ class MainBloc
 	// in dieses Sammelbecken kommen die Events
 	Sink<MainEvent> get MainEvents =>
 			_mainEventController.sink;
+
 	MainBloc()
 	{
-		print('created new MainBloc');
+		mainProperties = new MainProperties();
+		characterBloc = new CharacterBloc(this);
 		_mainEventController.stream.listen(_mapEventToState);
+
+		characterBlocSubscription = characterBloc.characterChange.listen
+		(
+			(characterChangeState) async
+			{
+				if
+				(
+					characterChangeState.state == CharacterChangeStates.characterSelected
+				)
+				{
+					if(characterChangeState.oldUuserID!=0)
+					{
+						await Future.wait
+						(
+							informOfPendingCharacterChange.map<Future>((m)=>m())
+						);
+					}
+					characterBloc.characterEvents.add
+					(
+						OthersAreReadyForCharacterChange()
+					);
+				}
+
+				if
+				(
+					characterChangeState.state ==
+						CharacterChangeStates.characterEstablished
+				)
+				{
+					// masterProperties.characterProperties = characterState;
+					// needs a lot more of adjustment if this doesn't work instead:
+					mainProperties.characterProperties =
+						characterBloc.characterProperties;
+					SetUserSelected();
+				}
+			}
+		);
+		this.MainEvents.add( new MainInitializeEvent() );
+		print('created new MainBloc ' + characterBloc.characterProperties.characterName);
 	}
+
+	void SetUserSelected()
+	{
+		mainProperties.status = mainStates.isUserSelected;
+		print('User selected');
+		_mainController.add(mainProperties);
+	}
+
+	Future<int> findCharacter() async
+	{
+		int currentUserID = await db.executeIntScalar
+			(
+				'''
+			SELECT 
+				[ValueInteger] AS No FROM [Value] 
+			WHERE 
+				[CharacterID] = 0 AND 
+				[Label]       = 'CurrentCharacter'
+			'''
+		);
+		characterBloc.characterEvents.add
+			(
+				new LoadCharacterEvent(id: currentUserID)
+		);
+		return currentUserID;
+	}
+
+
 	void poke(BuildContext context)
 	{
 		mainProperties.currentHeight   = MediaQuery.of(context).size.height;
@@ -253,7 +336,7 @@ class MainBloc
 				mainProperties.currentHeight *
 				MediaQuery.of(context).devicePixelRatio;
 
-		mainProperties.status = mainStates.isUserSelected; // todo: delete when implement
+		// mainProperties.status = mainStates.isUserSelected; // todo: delete when implement
 		_mainController.add(mainProperties);
 	}
 
@@ -266,6 +349,10 @@ class MainBloc
 		if(event is MainYearSelectedEvent)
 		{
 			await _mapEventToYearSelected(event);
+		}
+		if(event is MainInitializeEvent)
+		{
+			await _mapEventToInitialze(event);
 		}
 		return true;
 	}
@@ -321,9 +408,24 @@ class MainBloc
 		_mainController.add(mainProperties);
 	}
 
+	Future<bool> _mapEventToInitialze(MainInitializeEvent mainInitializeEvent) async
+	{
+		int currentCharacter = 0;
+		currentCharacter = await findCharacter();
+		if(currentCharacter==0)
+		{
+			characterBloc.characterEvents.add(LoadDefaultCharacterEvent());
+			// to do: upate last user entry.
+		}
+		else
+			SetUserSelected();
+		return true;
+	}
+
 	@override
 	void dispose()
 	{
+		characterBlocSubscription.cancel();
 		_mainEventController.close();
 	}
 }
