@@ -201,7 +201,7 @@ class MonthViewState extends State<MonthView>
 												{
 													Navigator.pushNamed
 													(
-														context, 'Search'
+														context, 'Search', arguments: widget.mainBloc
 													);
 												}
 											),

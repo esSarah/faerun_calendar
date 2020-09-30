@@ -27,12 +27,14 @@ class _CharacterSelectionState extends State<CharacterSelection>
 {
 	MainBloc      _mainBloc;
 	CharacterBloc _characterBloc;
-	bool isInfoVisible;
+	bool isInfoVisible = false;
+	double   x;
+	double   y;
+	bool     isPortrait = true;
 
 	@override
 	initState()
 	{
-		isInfoVisible = false;
 		super.initState();
 		_mainBloc      =  widget.mainBloc;
 		_characterBloc = _mainBloc.characterBloc;
@@ -41,6 +43,11 @@ class _CharacterSelectionState extends State<CharacterSelection>
 
 	Widget build(BuildContext context)
 	{
+		double   x  =  MediaQuery.of(context).size.width;
+		double   y  =  MediaQuery.of(context).size.height;
+
+		isPortrait=(x<y);
+
 		return StreamBuilder
 		(
 			stream: _mainBloc.master,
@@ -56,7 +63,6 @@ class _CharacterSelectionState extends State<CharacterSelection>
 					{
 						_mainBloc.poke(context);
 					}
-
 					return Text('');
 				}
 				else
@@ -632,4 +638,12 @@ class _CharacterSelectionState extends State<CharacterSelection>
 			}
 		);
 	}
+
+	Container userInfo()
+	{
+		
+
+		return new Container(width:1, height: 1);
+	}
+
 }
