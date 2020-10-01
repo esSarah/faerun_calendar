@@ -36,9 +36,9 @@ class MonthView extends StatefulWidget
 class MonthViewState extends State<MonthView>
 {
 
-	double   x  = 0;
-	double   y  = 0;
-	double   xy = 0;
+	double x      = 0;
+	double y      = 0;
+	double xy     = 0;
 
 	double sheetX = 0;
 	double sheetY = 0;
@@ -46,9 +46,9 @@ class MonthViewState extends State<MonthView>
 	double breakX = 0;
 	double breakY = 0;
 
-	Year     thisYear;
+	Year   thisYear;
 
-	bool     isPortrait = true;
+	bool   isPortrait = true;
 
 	double textBlockHeight = 100;
 
@@ -61,32 +61,32 @@ class MonthViewState extends State<MonthView>
 		x        = widget.proportions.monthViewX;
 		y        = widget.proportions.monthViewY;
 		// xy       = widget.proportions.xy;
-		isPortrait=(x<y);
+		isPortrait = ( x < y );
 		textBlockHeight = 100;
 		if(isPortrait)
 		{
-			sheetX = (x/3)*.75;
-			sheetY = ((y-textBlockHeight)/11)*.75;
+			sheetX = ( x / 3 ) * .75;
+			sheetY = ( ( y - textBlockHeight ) / 11 ) * .75;
 
-			breakX = (x/3)*.15;
-			breakY = ((y-textBlockHeight)/11)*.15;
-			if(sheetX>sheetY*1.5)
+			breakX = ( x / 3 ) * .15;
+			breakY = ( ( y - textBlockHeight ) / 11 ) * .15;
+			if(sheetX > sheetY * 1.5)
 			{
-				breakX+=sheetX-(sheetY*1.5);
-				sheetX = sheetY*1.5;
+				breakX += sheetX - ( sheetY * 1.5 );
+				sheetX  = sheetY * 1.5;
 			}
 		}
 		else
 		{
-			sheetX = ((x-textBlockHeight)/10)*.75;
-			sheetY = ((y-textBlockHeight)/4)*.75;
+			sheetX = ( ( x - textBlockHeight ) / 10 ) * .75;
+			sheetY = ( ( y - textBlockHeight ) /  4 ) * .75;
 
-			breakX = ((x-textBlockHeight)/10)*.15;
-			breakY = ((y-textBlockHeight)/4)*.15;
+			breakX = ( ( x - textBlockHeight ) / 10 ) * .15;
+			breakY = ( ( y - textBlockHeight ) /  4 ) * .15;
 			if(sheetX<sheetY)
 			{
-				breakY+=(sheetY-sheetX);
-				sheetY = sheetX;
+				breakY += ( sheetY - sheetX );
+				sheetY  = sheetX;
 			}
 		}
 
@@ -99,7 +99,13 @@ class MonthViewState extends State<MonthView>
 				AsyncSnapshot state,
 			)
 			{
-				if (state.data == null || state.data.status == mainStates.isInitializing || thisYear == null || !thisYear.initialized)
+				if
+				(
+					state.data        == null                      ||
+					state.data.status == mainStates.isInitializing ||
+					thisYear          == null                      ||
+					!thisYear.initialized
+				)
 				{
 					if (state.data == null)
 					{
@@ -138,7 +144,7 @@ class MonthViewState extends State<MonthView>
 					_month = thisYear.months.firstWhere
 					(
 						(aMonth)
-						=> aMonth.number == widget.month+1,
+						=> aMonth.number == widget.month + 1,
 						orElse: ()
 						=> null
 					);
@@ -423,13 +429,13 @@ class MonthViewState extends State<MonthView>
 								(
 									width  :
 										(moreWidth==null)
-										?
+									?
 										sheetX
-										:
+									:
 										(direction==null)
-											?
+										?
 											moreWidth-breakX
-											:
+										:
 											(moreWidth-breakX) / 2 - 5,
 
 									height : sheetY,

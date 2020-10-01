@@ -129,8 +129,8 @@ class _MyHomePageState extends State<MyHomePage>
 
           headerHeight = 32;
 
-          proportions.monthViewX = x *.95;
-          proportions.monthViewY = y - (100);
+          proportions.monthViewX = x * .95;
+          proportions.monthViewY = y - 100;
 
           //currentOrientation = state.data.currentOrientation;
           print('x: ' + x.toString() + ', y: ' + y.toString() + ', xy: ' + xy.toString());
