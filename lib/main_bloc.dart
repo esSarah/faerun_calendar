@@ -3,145 +3,8 @@ import 'package:meta/meta.dart';
 import 'package:flutter/material.dart';
 import 'character_selection_bloc.dart';
 import 'support_database.dart';
+import 'support_faerun_date.dart';
 
-class Month
-{
-	String          label          = 'Empty';
-	String          description    = 'None selected';
-
-
-	List<Day>        days   = new List<Day>();
-	int              number        = 0;
-	bool             initialized   = false;
-
-	Month();
-
-	Future<bool> initMonth(int currentPlace, String newLabel, String newDescription) async
-	{
-		number      = currentPlace;
-		label       = newLabel;
-		description = newDescription;
-		initialized = true;
-
-		for(int calendarDay=1;calendarDay<=30;calendarDay++)
-		{
-			Day newDay = new Day();
-			await newDay.initializeDay(calendarDay.toString());
-			days.add(newDay);
-		}
-
-		return initialized;
-
-	}
-
-	void addSpecialDay(Day specialDay)
-	{
-		days.add(specialDay);
-	}
-
-}
-
-class Day
-{
-	String label;
-	Future<bool> initializeDay(String name) async
-	{
-		label = name;
-		return true;
-	}
-	Day();
-}
-
-class Year
-{
-
-	int              currentYear;
-	List<Month>      months      = new List<Month>();
-	List<Day>        days        = new List<Day>();
-	bool             initialized = false;
-
-	Year();
-
-	Future<bool> InitYear(int yearNumber) async
-	{
-		currentYear = yearNumber;
-
-		Month _month;
-		Day   _specialDay;
-
-		_month =  new Month();
-		await _month.initMonth(1, 'Hammer', 'Tiefwinter');
-		_specialDay = new Day();
-		await _specialDay.initializeDay('Mittwinter');
-		_month.addSpecialDay(_specialDay);
-		months.add(_month);
-
-		_month =  new Month();
-		await _month.initMonth(2,'Alturiak','Die Klaue des Winters');
-		months.add(_month);
-
-		_month =  new Month();
-		await _month.initMonth(3, 'Ches', 'Die Klaue der Sonnenuntergänge');
-		months.add(_month);
-
-		_month =  new Month();
-		await _month.initMonth(4, 'Tarsakh', 'Die Klaue der Stürme');
-		_specialDay = new Day();
-		await _specialDay.initializeDay('Grüngrad');
-		_month.addSpecialDay(_specialDay);
-		months.add(_month);
-
-		_month =  new Month();
-		await _month.initMonth(5, 'Mirtul', 'Das Schmelzen');
-		months.add(_month);
-
-		_month =  new Month();
-		await _month.initMonth(6, 'Kythorn', 'Die Zeit der Blumen');
-		months.add(_month);
-
-		_month =  new Month();
-		await _month.initMonth(7, 'Flammenherrschaft', 'Sommerflut');
-		_specialDay = new Day();
-		await _specialDay.initializeDay('Mittsommer');
-		_month.addSpecialDay(_specialDay);
-		if(yearNumber%4==0)
-		{
-			_specialDay = new Day();
-			await _specialDay.initializeDay('Schildtreffen');
-			_month.addSpecialDay(_specialDay);
-		}
-		months.add(_month);
-
-		_month =  new Month();
-		await _month.initMonth(8, 'Elesias', 'Hochsonne');
-		months.add(_month);
-
-		_month =  new Month();
-		await _month.initMonth(9, 'Eleint', 'Das Verblassen');
-		_specialDay = new Day();
-		await _specialDay.initializeDay('Hochernte');
-		_month.addSpecialDay(_specialDay);
-		months.add(_month);
-
-		_month =  new Month();
-		await _month.initMonth(10, 'Marpenoth', 'Laubfall');
-		months.add(_month);
-
-		_month =  new Month();
-		await _month.initMonth(11, 'Uktar', 'Der Verfall');
-		_specialDay = new Day();
-		await _specialDay.initializeDay('Das Fest des Mondes');
-		_month.addSpecialDay(_specialDay);
-		months.add(_month);
-
-		_month =  new Month();
-		await _month.initMonth(12, 'Nightal', 'Der Niedergang');
-		months.add(_month);
-
-		initialized = true;
-		return initialized;
-	}
-}
 
 enum mainStates
 {
@@ -241,13 +104,13 @@ class MainBloc
 
 	final _mainEventController = StreamController<MainEvent>();
 	// in dieses Sammelbecken kommen die Events
-	Sink<MainEvent> get MainEvents =>
+	Sink<MainEvent> get mainEvents =>
 			_mainEventController.sink;
 
 	MainBloc()
 	{
 		mainProperties = new MainProperties();
-		characterBloc = new CharacterBloc(this);
+		characterBloc  = new CharacterBloc(this);
 		_mainEventController.stream.listen(_mapEventToState);
 
 		characterBlocSubscription = characterBloc.characterChange.listen
@@ -282,19 +145,30 @@ class MainBloc
 					// needs a lot more of adjustment if this doesn't work instead:
 					mainProperties.characterProperties =
 						characterBloc.characterProperties;
-					SetUserSelected();
+					await setUserSelected();
 				}
+
+				await _setBackground();
 			}
 		);
-		this.MainEvents.add( new MainInitializeEvent() );
+		this.mainEvents.add( new MainInitializeEvent() );
+
 		print('created new MainBloc ' + characterBloc.characterProperties.characterName);
 	}
 
-	void SetUserSelected()
+	Future<bool> setUserSelected() async
 	{
+		mainProperties.currentYear =
+				characterBloc.characterProperties.selectedDate.year.currentYear;
+		mainProperties.currentMonth =
+				characterBloc.characterProperties.selectedDate.month;
+
+
 		mainProperties.status = mainStates.isUserSelected;
-		print('User selected');
+
+		print('Current date: ${mainProperties.currentYear}, ${mainProperties.currentMonth}');
 		_mainController.add(mainProperties);
+		return true;
 	}
 
 	Future<int> findCharacter() async
@@ -310,8 +184,8 @@ class MainBloc
 			'''
 		);
 		characterBloc.characterEvents.add
-			(
-				new LoadCharacterEvent(id: currentUserID)
+		(
+			new LoadCharacterEvent(id: currentUserID)
 		);
 		return currentUserID;
 	}
@@ -344,7 +218,7 @@ class MainBloc
 	{
 		if(event is MainMonthSelectedEvent)
 		{
-			_mapEventToMonthSelected(event);
+			await _mapEventToMonthSelected(event);
 		}
 		if(event is MainYearSelectedEvent)
 		{
@@ -354,15 +228,27 @@ class MainBloc
 		{
 			await _mapEventToInitialze(event);
 		}
+		print(mainProperties.status.toString());
 		return true;
 	}
 
-	void _mapEventToMonthSelected(MainMonthSelectedEvent mainMonthSelectedEvent)
+	Future<bool> _mapEventToMonthSelected
+	(
+		MainMonthSelectedEvent mainMonthSelectedEvent
+	)
+	async
 	{
 		int monthsOverAll = mainMonthSelectedEvent.newMonth;
 		mainProperties.currentYear = (monthsOverAll / 12).floor();
 		mainProperties.currentMonth = monthsOverAll-(mainProperties.currentYear*12);
 		mainProperties.currentMonth++;
+		await _setBackground();
+		_mainController.add(mainProperties);
+		return true;
+	}
+
+	Future<bool> _setBackground() async
+	{
 		if(mainProperties.currentMonth==12||mainProperties.currentMonth<=2)
 		{
 			mainProperties.backgroundImage = 'assets/winter.png';
@@ -379,8 +265,7 @@ class MainBloc
 		{
 			mainProperties.backgroundImage = 'assets/autumn.png';
 		}
-
-		_mainController.add(mainProperties);
+		return true;
 	}
 
 	Future<bool> _mapEventToYearSelected(MainYearSelectedEvent mainYearSelectedEvent) async
@@ -401,24 +286,30 @@ class MainBloc
 		)
 		{
 			Year _newYear = new Year();
-			await _newYear.InitYear(yearToLoad);
+			await _newYear.initYear(yearToLoad);
 			mainProperties.years.add(_newYear);
 		}
 
 		_mainController.add(mainProperties);
+		return true;
 	}
 
-	Future<bool> _mapEventToInitialze(MainInitializeEvent mainInitializeEvent) async
+	Future<bool> _mapEventToInitialze
+	(
+		MainInitializeEvent mainInitializeEvent
+	)
+	async
 	{
 		int currentCharacter = 0;
-		currentCharacter = await findCharacter();
+		currentCharacter     = await findCharacter();
 		if(currentCharacter==0)
 		{
 			characterBloc.characterEvents.add(LoadDefaultCharacterEvent());
-			// to do: upate last user entry.
 		}
 		else
-			SetUserSelected();
+		{
+			setUserSelected();
+		}
 		return true;
 	}
 

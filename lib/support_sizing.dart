@@ -18,16 +18,14 @@ class Proportions
 
 	refreshProportions(BuildContext context)
 	{
-;
-
 		x  = MediaQuery.of(context).size.width;
 		y  = MediaQuery.of(context).size.height;
 
 		xr = x * MediaQuery.of(context).devicePixelRatio;
 		yr = y * MediaQuery.of(context).devicePixelRatio;
 
-		headerHeight = yr*.05;
+		headerHeight = yr * .05;
 
-		xy = x/y;
+		xy = x / y;
 	}
 }

@@ -132,11 +132,6 @@ class _MyHomePageState extends State<MyHomePage>
           proportions.monthViewX = x * .95;
           proportions.monthViewY = y - 100;
 
-          //currentOrientation = state.data.currentOrientation;
-          print('x: ' + x.toString() + ', y: ' + y.toString() + ', xy: ' + xy.toString());
-          print('Direction=' + MediaQuery.of(context).orientation.toString());
-          print('Device PixelRatio=' + MediaQuery.of(context).devicePixelRatio.toString());
-
           return Scaffold
           (
             body: Column
@@ -179,7 +174,8 @@ class _MyHomePageState extends State<MyHomePage>
                       (
                         height            : y - (100),
                         viewportFraction  : .95,
-                        initialPage       : 17760,
+                        initialPage       :
+                        state.data.currentYear*12+state.data.currentMonth,
                         aspectRatio       : xy,
                         enlargeCenterPage : false,
                         autoPlay          : false,
@@ -189,7 +185,7 @@ class _MyHomePageState extends State<MyHomePage>
                           (
                             ()
                             {
-                              mainBloc.MainEvents.add
+                              mainBloc.mainEvents.add
                               (
                                 MainMonthSelectedEvent(newMonth: index)
                               );

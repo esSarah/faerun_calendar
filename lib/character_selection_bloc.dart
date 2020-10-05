@@ -2,6 +2,7 @@ import 'support_database.dart';
 import 'dart:async';
 import 'package:meta/meta.dart';
 import 'main_bloc.dart';
+import 'support_faerun_date.dart';
 
 ///region Sates
 enum CharacterStates
@@ -44,8 +45,10 @@ class CharacterProperties
 
 	List<CharacterData> availableCharacters = new List<CharacterData>();
 
-	bool currentNameSuggestionIsValid = false;
-	String suggestedName = '';
+	bool       currentNameSuggestionIsValid = false;
+	String     suggestedName                = '';
+	FaerunDate partyDate                    = new FaerunDate();
+	FaerunDate selectedDate                 = new FaerunDate();
 }
 
 class CharacterData
@@ -127,7 +130,7 @@ class CharacterBloc
 	DatabaseManager           db;
 	CharacterProperties       characterProperties            = new CharacterProperties();
 	CharacterChangeProperties characterRefreshroperties      = new CharacterChangeProperties();
-	int                       DefaultCharacter               = 1;
+	int                       defaultCharacter               = 1;
 	bool                      characterListIsCurrentlyEdited = false;
 	//endregion
 
@@ -155,7 +158,7 @@ class CharacterBloc
 		db = main.mainProperties.db;
 		_characterEventController.stream.listen(_mapEventToState);
 		_characterController.add(characterProperties);
-		_LoadInitialCharacterList();
+		_loadInitialCharacterList();
 	}
 	void poke()
 	{
@@ -163,7 +166,7 @@ class CharacterBloc
 	}
 
 	//region helper method
-	bool ValidateNewName(String nameSuggestion)
+	bool validateNewName(String nameSuggestion)
 	{
 		nameSuggestion = nameSuggestion.trim();
 		if(nameSuggestion.isEmpty)
@@ -188,13 +191,13 @@ class CharacterBloc
 				}
 				else
 				{
-					CharacterData IgotNothing;
+					CharacterData iGotNothing;
 
-					IgotNothing  = characterProperties.availableCharacters.firstWhere
+					iGotNothing  = characterProperties.availableCharacters.firstWhere
 						(
 									(aCharacter) => aCharacter.characterName==nameSuggestion, orElse: () => null
 					);
-					if(IgotNothing==null)
+					if(iGotNothing==null)
 					{
 						characterProperties.suggestedName = nameSuggestion;
 						return true;
@@ -218,37 +221,98 @@ class CharacterBloc
 			characterProperties.availableCharacters.clear();
 			List<Map> characterData = await db.read("SELECT ID, Name FROM Character");
 			characterData.forEach
-				(
-							(char)
-					{
-						CharacterData _characterData = new CharacterData();
-						_characterData.id            = char[ 'ID'   ];
-						_characterData.characterName = char[ 'Name' ];
-						characterProperties.availableCharacters.add(_characterData);
-					}
+			(
+				(char)
+				{
+					CharacterData _characterData = new CharacterData();
+					_characterData.id            = char[ 'ID'   ];
+					_characterData.characterName = char[ 'Name' ];
+					characterProperties.availableCharacters.add(_characterData);
+				}
 			);
 		}
 		characterListIsCurrentlyEdited = false;
 		return true;
 	}
 
-
-
 	Future<bool> loadCharacter(int byId) async
 	{
 		List<Map> characterData = await db.read
-			(
-				'SELECT ID, Name FROM Character WHERE Id = ' + byId.toString()
+		(
+			'SELECT ID, Name FROM Character WHERE Id = ' + byId.toString()
 		);
 
 		characterData.forEach
-			(
-						(char)
-				{
-					characterProperties.id            = char[ 'ID'   ];
-					characterProperties.characterName = char[ 'Name' ];
-				}
+		(
+			(char)
+			{
+				characterProperties.id            = char[ 'ID'   ];
+				characterProperties.characterName = char[ 'Name' ];
+			}
 		);
+
+		List<Map> dateData = await db.read
+		(
+			'''
+			SELECT  
+			[Dates].[Year] AS CharYear, 
+			[Dates].[Month] AS CharMonth, 
+			[Dates].[Day] AS CharDay, 
+			[Value].[Label] AS CharLabel
+			FROM [Value] INNER JOIN [Dates]
+			ON [Dates].[ID] = [Value].[ValueInteger] 
+			WHERE [Value].[CharacterID] = ${characterProperties.id} 
+			AND 
+			(
+				[Value].[Label] = 'CurrentDate'
+				OR
+				[Value].[Label] = 'PartyDate'
+			)
+			'''
+		);
+		int _selectedYear;
+		int _selectedMonth;
+		int _selectedDay;
+
+		int _partyYear;
+		int _partyMonth;
+		int _partyDay;
+
+		dateData.forEach
+		(
+			(dates)
+			{
+				int _year  = dates[ 'CharYear'  ];
+				int _month = dates[ 'CharMonth' ];
+				int _day =  dates[ 'CharDay'   ];
+				String _type  = dates[ 'CharLabel' ];
+				if(_type == 'CurrentDate')
+				{
+					_selectedYear  = _year;
+					_selectedMonth = _month;
+					_selectedDay   = _day;
+				}
+				else
+				{
+					_partyYear  = _year;
+					_partyMonth = _month;
+					_partyDay   = _day;
+				}
+			}
+		);
+
+		bool _isValid = await characterProperties.selectedDate.loadDate(_selectedYear, _selectedMonth, _selectedDay);
+		if(!_isValid)
+		{
+			await characterProperties.selectedDate.loadDate(1490, 9, 6);
+		}
+
+		_isValid = await characterProperties.partyDate.loadDate(_partyYear, _partyMonth, _partyDay);
+		if(!_isValid)
+		{
+			await characterProperties.partyDate.loadDate(1490, 9, 6);
+		}
+
 
 		await db.read('''
 		UPDATE [Value] SET [ValueInteger] = ${characterProperties.id}
@@ -268,29 +332,23 @@ class CharacterBloc
 		);
 		newID++;
 		await db.read
-			(
-				'INSERT INTO Character (ID, Name) VALUES('
-						+ newID.toString() + ', \'' + db.secure(newName) + '\')'
+		(
+			'INSERT INTO Character (ID, Name) VALUES('
+			+ newID.toString() + ', \'' + db.secure(newName) + '\')'
 		);
-		/*
-		characterProperties.id            = newID;
-		characterProperties.characterName = newName;
-
-		 */
-
 		return newID;
 	}
 
 	Future<bool> deleteCharacter(int byId) async
 	{
-		if(byId != DefaultCharacter)
+		if(byId != defaultCharacter)
 		{
 			await db.read('DELETE FROM Value            WHERE CharacterID = ' +
-					byId.toString());
+				byId.toString());
 			await db.read('DELETE FROM Span WHERE CharacterID = ' +
-					byId.toString());
+				byId.toString());
 			await db.read('DELETE FROM Character        WHERE          ID = ' +
-					byId.toString());
+				byId.toString());
 		}
 		return true;
 	}
@@ -298,7 +356,7 @@ class CharacterBloc
 	Future<bool> changeCharacter(String newName) async
 	{
 		await db.read('UPDATE Character SET Name=\''+ db.secure(newName) +
-				'\' WHERE ID = ' + characterProperties.id.toString());
+			'\' WHERE ID = ' + characterProperties.id.toString());
 		characterProperties.characterName = newName;
 
 		return true;
@@ -306,7 +364,7 @@ class CharacterBloc
 
 	Future<bool> loadDefaultCharacter() async
 	{
-		loadCharacter(DefaultCharacter);
+		loadCharacter(defaultCharacter);
 		return true;
 	}
 
@@ -317,7 +375,7 @@ class CharacterBloc
 	{
 		if(event is LoadIinitialCharacterList)
 		{
-			_LoadInitialCharacterList();
+			_loadInitialCharacterList();
 		}
 
 		if (event is LoadCharacterEvent)
@@ -326,7 +384,7 @@ class CharacterBloc
 		}
 		if (event is LoadDefaultCharacterEvent)
 		{
-			_LoadDefaultCharacter();
+			_loadDefaultCharacter();
 		}
 		if(event is ChangeModeToNewCharacterEvent)
 		{
@@ -334,7 +392,7 @@ class CharacterBloc
 		}
 		if(event is ChangeCharacterEvent)
 		{
-			_ChangeCharacter();
+			_changeCharacter();
 		}
 
 		if(event is ChangeModeToEditCharacterEvent)
@@ -344,7 +402,7 @@ class CharacterBloc
 
 		if(event is CancelCharacterEditEvent)
 		{
-			_CancelCharacterEdit();
+			_cancelCharacterEdit();
 		}
 
 		if(event is SwitchToCharacterEvent)
@@ -368,15 +426,15 @@ class CharacterBloc
 		}
 	}
 
-	void _LoadInitialCharacterList() async
+	void _loadInitialCharacterList() async
 	{
 		await refreshCharacterList();
 		_characterController.add(characterProperties);
 	}
 
-	void _LoadDefaultCharacter() async
+	void _loadDefaultCharacter() async
 	{
-		this.characterEvents.add(LoadCharacterEvent(id: DefaultCharacter));
+		this.characterEvents.add(LoadCharacterEvent(id: defaultCharacter));
 		/*
 		characterProperties.state = CharacterStates.isChanging;
 		characterRefreshroperties.oldUuserID = characterProperties.id;
@@ -419,7 +477,7 @@ class CharacterBloc
 		_characterController.add(characterProperties);
 	}
 
-	void _CancelCharacterEdit()
+	void _cancelCharacterEdit()
 	{
 		characterProperties.editState = CharacterEditingStates.isNotBeingEdited;
 		_characterController.add(characterProperties);
@@ -427,11 +485,11 @@ class CharacterBloc
 
 	void _checkValidNameSuggestion(CharacterEvaluationEvent event)
 	{
-		characterProperties.currentNameSuggestionIsValid = ValidateNewName(event.suggestedName);
+		characterProperties.currentNameSuggestionIsValid = validateNewName(event.suggestedName);
 		_characterController.add(characterProperties);
 	}
 
-	void _ChangeCharacter() async
+	void _changeCharacter() async
 	{
 		int changeToCharacterID = 0;
 		if(characterProperties.editState == CharacterEditingStates.PrepareNewCharacter)
@@ -461,7 +519,7 @@ class CharacterBloc
 		characterProperties.editState = CharacterEditingStates.isNotBeingEdited;
 		refreshCharacterList();
 		_characterController.add(characterProperties);
-		this.characterEvents.add(LoadCharacterEvent(id: DefaultCharacter));
+		this.characterEvents.add(LoadCharacterEvent(id: defaultCharacter));
 	}
 
 	void _finalizeCharacterChange() async

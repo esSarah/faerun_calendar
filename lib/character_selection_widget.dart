@@ -32,7 +32,7 @@ class _CharacterSelectionState extends State<CharacterSelection>
 	double x;
 	double y;
 	bool isPortrait = true;
-	String NewCharacterName = '';
+	String newCharacterName = '';
 
 	@override
 	initState()
@@ -104,14 +104,14 @@ class _CharacterSelectionState extends State<CharacterSelection>
 									}
 									else
 									{
-										List<Widget> DrawerWidgets = new List<Widget>();
+										List<Widget> widgets = new List<Widget>();
 										if
 										(
 										characterState.data.editState ==
 												CharacterEditingStates.isNotBeingEdited
 										)
 										{
-											DrawerWidgets.add
+											widgets.add
 												(
 													showCharacterHeader
 														(
@@ -128,7 +128,7 @@ class _CharacterSelectionState extends State<CharacterSelection>
 													CharacterEditingStates.ChangeCurrentCharacter
 											)
 											{
-												DrawerWidgets.add
+												widgets.add
 													(
 														showEditCurrentCharacterHeader
 															(
@@ -139,7 +139,7 @@ class _CharacterSelectionState extends State<CharacterSelection>
 											}
 											else
 											{
-												DrawerWidgets.add
+												widgets.add
 												(
 													showCreateNewCharacterHeader
 														(
@@ -159,7 +159,7 @@ class _CharacterSelectionState extends State<CharacterSelection>
 
 													if (currentID != characterState.data.id)
 													{
-														DrawerWidgets.add
+														widgets.add
 															(
 																new ListTile
 																	(
@@ -205,12 +205,12 @@ class _CharacterSelectionState extends State<CharacterSelection>
 										);
 										if (characterState.data.availableCharacters.length > 1)
 										{
-											DrawerWidgets.add
+											widgets.add
 												(
 													new Divider()
 											);
 										}
-										DrawerWidgets.add
+										widgets.add
 											(
 											new ListTile
 												(
@@ -254,7 +254,7 @@ class _CharacterSelectionState extends State<CharacterSelection>
 // Info tile
 										if (isInfoVisible)
 										{
-											DrawerWidgets.add
+											widgets.add
 												(
 												new ListTile
 													(
@@ -285,7 +285,7 @@ class _CharacterSelectionState extends State<CharacterSelection>
 										}
 										else
 										{
-											DrawerWidgets.add
+											widgets.add
 												(
 												new ListTile
 													(
@@ -319,10 +319,10 @@ class _CharacterSelectionState extends State<CharacterSelection>
 											(
 												body: ListView.builder
 													(
-													itemCount: DrawerWidgets.length,
+													itemCount: widgets.length,
 													itemBuilder: (context, index)
 													{
-														return DrawerWidgets[index];
+														return widgets[index];
 													},
 												)
 										);
@@ -428,7 +428,7 @@ class _CharacterSelectionState extends State<CharacterSelection>
 							[
 								AutoSizeText
 									(
-										characterState.data.id == _mainBloc.characterBloc.DefaultCharacter
+										characterState.data.id == _mainBloc.characterBloc.defaultCharacter
 												?
 										'Charakter bearbeiten'
 												:
@@ -442,11 +442,11 @@ class _CharacterSelectionState extends State<CharacterSelection>
 										)
 								),
 								SizedBox
-									(
+								(
 									width : x - 110,
 									child :
 									Column
-										(
+									(
 										crossAxisAlignment: CrossAxisAlignment.end,
 										children: <Widget>
 										[
@@ -454,22 +454,22 @@ class _CharacterSelectionState extends State<CharacterSelection>
 												(
 												onChanged: (value)
 												{
-													NewCharacterName = value;
+													newCharacterName = value;
 													_mainBloc.characterBloc.characterEvents.add
 														(
 															CharacterEvaluationEvent
-																(
-																	suggestedName : NewCharacterName
+															(
+																suggestedName : newCharacterName
 															)
 													);
 												},
 											),
 											Text
-												(
+											(
 												characterState.data.characterName,
 												textScaleFactor : .9,
 												style: new TextStyle
-													(
+												(
 													fontStyle  : FontStyle.italic,
 													color      : Colors.blueGrey,
 													fontFamily : 'NugieRomantic',
@@ -477,83 +477,82 @@ class _CharacterSelectionState extends State<CharacterSelection>
 												),
 											),
 											SizedBox
-												(
+											(
 												width : x - 110,
 												child : Row
-													(
-														crossAxisAlignment: CrossAxisAlignment.end,
-														children: <Widget>
-														[
+												(
+													crossAxisAlignment: CrossAxisAlignment.end,
+													children: <Widget>
+													[
 
-															characterState.data.id !=
-																	_mainBloc.characterBloc.DefaultCharacter
-																	?
-															IconButton
+														characterState.data.id !=
+																_mainBloc.characterBloc.defaultCharacter
+																?
+														IconButton
+															(
+															icon: Icon
 																(
-																icon: Icon
-																	(
-																	FontAwesomeIcons.trash,
-																	color: Colors.red,
-																	size : 20,
-																),
-																onPressed: ()
-																{
-																	_mainBloc.characterBloc.characterEvents.add
-																		(
-																			DeleteCurrentCharacterEvent()
-																	);
-																},
-															)
-																	:
-															Text(''),
-
-															IconButton
-																(
-																icon: Icon
-																	(
-																	FontAwesomeIcons.ban,
-																	size: 20,
-																),
-																onPressed: ()
-																{
-																	_mainBloc.characterBloc.characterEvents.add
-																		(
-																			CancelCharacterEditEvent()
-																	);
-																},
+																FontAwesomeIcons.trash,
+																color: Colors.red,
+																size : 20,
 															),
+															onPressed: ()
+															{
+																_mainBloc.characterBloc.characterEvents.add
+																	(
+																		DeleteCurrentCharacterEvent()
+																);
+															},
+														)
+																:
+														Text(''),
 
-															characterState.data.currentNameSuggestionIsValid
-																	?
-															IconButton
+														IconButton
+															(
+															icon: Icon
 																(
-																	icon: Icon
-																		(
-																		FontAwesomeIcons.check,
-																		color: Colors.green,
-																		size: 20,
-																	),
+																FontAwesomeIcons.ban,
+																size: 20,
+															),
+															onPressed: ()
+															{
+																_mainBloc.characterBloc.characterEvents.add
+																	(
+																		CancelCharacterEditEvent()
+																);
+															},
+														),
 
-																	onPressed: ()
-																	{
-																		_mainBloc.characterBloc.characterEvents.add
-																			(
-																				ChangeCharacterEvent()
-																		);
-																	}
-															)
-																	:
-															IconButton
-																(
+														characterState.data.currentNameSuggestionIsValid
+																?
+														IconButton
+															(
 																icon: Icon
 																	(
 																	FontAwesomeIcons.check,
-																	color: Colors.grey,
+																	color: Colors.green,
 																	size: 20,
 																),
-															),
 
-														]
+																onPressed: ()
+																{
+																	_mainBloc.characterBloc.characterEvents.add
+																		(
+																			ChangeCharacterEvent()
+																	);
+																}
+														)
+																:
+														IconButton
+															(
+															icon: Icon
+																(
+																FontAwesomeIcons.check,
+																color: Colors.grey,
+																size: 20,
+															),
+														),
+													]
 												),
 											),
 										],
@@ -566,10 +565,10 @@ class _CharacterSelectionState extends State<CharacterSelection>
 	}
 
 	Widget showCreateNewCharacterHeader
-			(
-			AsyncSnapshot state,
-			AsyncSnapshot characterState
-			)
+	(
+		AsyncSnapshot state,
+		AsyncSnapshot characterState
+	)
 	{
 		return Row
 			(
@@ -606,21 +605,21 @@ class _CharacterSelectionState extends State<CharacterSelection>
 										children: <Widget>
 										[
 											TextField
-												(
+											(
 												onChanged: (value)
 												{
-													NewCharacterName = value;
+													newCharacterName = value;
 													_mainBloc.characterBloc.characterEvents.add
+													(
+														CharacterEvaluationEvent
 														(
-															CharacterEvaluationEvent
-																(
-																	suggestedName: NewCharacterName
-															)
+															suggestedName: newCharacterName
+														)
 													);
 												},
 											),
 											SizedBox
-												(
+											(
 												width: x - 110,
 												child: Row
 													(
@@ -628,9 +627,9 @@ class _CharacterSelectionState extends State<CharacterSelection>
 														children: <Widget>
 														[
 															IconButton
-																(
+															(
 																icon: Icon
-																	(
+																(
 																	FontAwesomeIcons.ban,
 																	size : 20,
 																),
@@ -646,21 +645,21 @@ class _CharacterSelectionState extends State<CharacterSelection>
 															characterState.data.currentNameSuggestionIsValid
 																	?
 															IconButton
-																(
-																	icon: Icon
-																		(
-																		FontAwesomeIcons.check,
-																		color : Colors.green,
-																		size  : 20,
-																	),
+															(
+																icon: Icon
+																	(
+																	FontAwesomeIcons.check,
+																	color : Colors.green,
+																	size  : 20,
+																),
 
-																	onPressed: ()
-																	{
-																		_mainBloc.characterBloc.characterEvents.add
-																			(
-																				ChangeCharacterEvent()
-																		);
-																	}
+																onPressed: ()
+																{
+																	_mainBloc.characterBloc.characterEvents.add
+																		(
+																			ChangeCharacterEvent()
+																	);
+																}
 															)
 																	:
 															IconButton

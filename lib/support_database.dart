@@ -98,6 +98,7 @@ class DatabaseManager
 	Future<bool> debugPrintTable(String tablename) async
 	{
 		await debugPrintSqlQuery('SELECT * FROM ${secure(tablename)}');
+		return true;
 	}
 
 	Future<bool> debugPrintSqlQuery(String sql) async

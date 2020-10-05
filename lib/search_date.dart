@@ -30,7 +30,7 @@ class _SearchDateState extends State<SearchDate>
 	double x;
 	double y;
 	bool isPortrait = true;
-	String NewCharacterName = '';
+	String newCharacterName = '';
 
 	@override
 	initState()

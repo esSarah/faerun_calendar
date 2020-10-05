@@ -3,6 +3,7 @@ import 'support_routing.dart' as router;
 import 'support_sizing.dart'  as sizing;
 import 'main_bloc.dart';
 import 'package:auto_size_text/auto_size_text.dart';
+import 'support_faerun_date.dart';
 
 class MonthView extends StatefulWidget
 {
@@ -109,7 +110,7 @@ class MonthViewState extends State<MonthView>
 				{
 					if (state.data == null)
 					{
-						mainBloc.MainEvents.add
+						mainBloc.mainEvents.add
 						(
 							MainYearSelectedEvent(newYear: widget.year)
 						);
