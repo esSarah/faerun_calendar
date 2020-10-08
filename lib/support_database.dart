@@ -68,15 +68,15 @@ class DatabaseManager
 			// the break statement doesn't work in
 			// the Lists forEach function though.
 			resultMap.forEach
-				(
-							(line)
+			(
+				(line)
+				{
+					if(isFirstLine)
 					{
-						if(isFirstLine)
-						{
-							result = line[line.keys.first];
-							isFirstLine=false;
-						}
+						result = line[line.keys.first];
+						isFirstLine=false;
 					}
+				}
 			);
 		}
 		catch(e)
@@ -84,11 +84,11 @@ class DatabaseManager
 			print ("Result of \'" + sql + "\' was not an Integer");
 			print ("Trying to parse the result");
 			resultMap.forEach
-				(
-							(line)
-					{
-						result = int.tryParse(line[line.keys.first].toString());
-					}
+			(
+				(line)
+				{
+					result = int.tryParse(line[line.keys.first].toString());
+				}
 			);
 		}
 
@@ -107,33 +107,33 @@ class DatabaseManager
 		List<Map> resultMap;
 		resultMap = await read(sql);
 		resultMap.forEach
-			(
-						(line)
+		(
+			(line)
+			{
+				if(isFirstLine)
 				{
-					if(isFirstLine)
-					{
-						String columns = '';
-						line.keys.forEach
-							(
-										(currentKey)
-								{
-									columns += currentKey.toString() + ', ';
-								}
-						);
-						print('Headers: ' + columns);
-						print('-----------');
-						isFirstLine = false;
-					}
-					String values = '';
+					String columns = '';
 					line.keys.forEach
-						(
-									(currentKey)
-							{
-								values += line[currentKey].toString() + ', ';
-							}
+					(
+						(currentKey)
+						{
+							columns += currentKey.toString() + ', ';
+						}
 					);
-					print(values);
+					print('Headers: ' + columns);
+					print('-----------');
+					isFirstLine = false;
 				}
+				String values = '';
+				line.keys.forEach
+				(
+					(currentKey)
+					{
+						values += line[currentKey].toString() + ', ';
+					}
+				);
+				print(values);
+			}
 		);
 		return true;
 	}
@@ -302,16 +302,6 @@ class DatabaseManager
 	{
 		String databaseStructur = '''
 
--- Table: Character
-CREATE TABLE Character ( 
-    ID   INT             PRIMARY KEY
-                         NOT NULL
-                         UNIQUE,
-    Name VARCHAR( 255 ) 
-);
-
-INSERT INTO [Character] ([ID], [Name]) VALUES (1, 'Der erste Charakter');
-
 -- Table: Value
 CREATE TABLE Value ( 
     CharacterID  INTEGER         NOT NULL,
@@ -322,7 +312,6 @@ CREATE TABLE Value (
 );
 
 INSERT INTO [Value] ([CharacterID], [Label], [ValueString], [ValueInteger], [Timestamp]) VALUES (0, 'CurrentCharacter', null, 1, '2020-9-29 0:00');
-INSERT INTO [Value] ([CharacterID], [Label], [ValueString], [ValueInteger], [Timestamp]) VALUES (1, 'CurrentDate', null, 1, '2020-9-29 0:00');
 
 -- Table: Dates
 CREATE TABLE Dates ( 
@@ -337,7 +326,8 @@ CREATE TABLE Dates (
     Minutes INTEGER NOT NULL 
 );
 
-INSERT INTO [Dates] ([ID], [TypeID], [Year], [Month], [Day], [Hour], [Minutes]) VALUES (1, 1, 1490, 6, 9, 0, 0);
+INSERT INTO [Dates] ([ID], [TypeID], [Year], [Month], [Day], [Hour], [Minutes]) VALUES (1, 1, 1419, 3, 2, 0, 0);
+INSERT INTO [Dates] ([ID], [TypeID], [Year], [Month], [Day], [Hour], [Minutes]) VALUES (2, 2, 1485, 1, 1, 0, 0);
 
 -- Table: Span
 CREATE TABLE Span ( 
@@ -351,6 +341,18 @@ CREATE TABLE Span (
     Description TEXT            NOT NULL 
 );
 
+
+-- Table: Character
+CREATE TABLE Character ( 
+    ID            INT             PRIMARY KEY
+                                  NOT NULL
+                                  UNIQUE,
+    Name          VARCHAR( 255 ),
+    CurrentDateID INTEGER,
+    PartyDateID   INTEGER 
+);
+
+INSERT INTO [Character] ([ID], [Name], [CurrentDateID], [PartyDateID]) VALUES (1, 'Der erste Charakter', 1, 2);
 
     ''';
 		List<String> commands = databaseStructur.split(";");

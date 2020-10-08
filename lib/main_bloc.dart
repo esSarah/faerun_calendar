@@ -5,18 +5,17 @@ import 'character_selection_bloc.dart';
 import 'support_database.dart';
 import 'support_faerun_date.dart';
 
-
 enum mainStates
 {
 	isInitializing,
 	isUserSelected,
+	dateChangeIsPending,
+	dateChangeIsConfirmed,
 }
 
 class MainProperties
 {
-	int    currentYear     = 1490;
-	int    currentMonth    = 1;
-	int    currentDay      = 1;
+	FaerunDate currentMonth = new FaerunDate();
 
 	double currentWidth    = 0;
 	double currentHeight   = 0;
@@ -126,6 +125,17 @@ class MainBloc
 					{
 						await Future.wait
 						(
+							// in case you might wonder... this is
+							// not exactly neccessary here,
+							// the whole character management is pulled form
+							// another project where the character selection
+							// is in a drawer and a character change effects
+							// many blocs. More work to scratch it out
+							// and than maybe even put it back in in case
+							// the layout of this app changes.
+							//
+							// Right now the callback collection is
+							// just always empty.
 							informOfPendingCharacterChange.map<Future>((m)=>m())
 						);
 					}
@@ -158,23 +168,22 @@ class MainBloc
 
 	Future<bool> setUserSelected() async
 	{
-		mainProperties.currentYear =
-				characterBloc.characterProperties.selectedDate.year.currentYear;
-		mainProperties.currentMonth =
+		if(mainProperties.characterProperties.id!=0)
+		{
+			mainProperties.currentMonth.year  =
+					characterBloc.characterProperties.selectedDate.year;
+			mainProperties.currentMonth.month =
 				characterBloc.characterProperties.selectedDate.month;
-
-
-		mainProperties.status = mainStates.isUserSelected;
-
-		print('Current date: ${mainProperties.currentYear}, ${mainProperties.currentMonth}');
-		_mainController.add(mainProperties);
+			mainProperties.status = mainStates.isUserSelected;
+			_mainController.add(mainProperties);
+		}
 		return true;
 	}
 
 	Future<int> findCharacter() async
 	{
 		int currentUserID = await db.executeIntScalar
-			(
+		(
 				'''
 			SELECT 
 				[ValueInteger] AS No FROM [Value] 
@@ -238,33 +247,62 @@ class MainBloc
 	)
 	async
 	{
-		int monthsOverAll = mainMonthSelectedEvent.newMonth;
-		mainProperties.currentYear = (monthsOverAll / 12).floor();
-		mainProperties.currentMonth = monthsOverAll-(mainProperties.currentYear*12);
-		mainProperties.currentMonth++;
+		int _monthsOverAll = mainMonthSelectedEvent.newMonth;
+		int _year = (_monthsOverAll / 12).floor();
+		mainProperties.currentMonth.year.initYear(_year);
+		mainProperties.currentMonth.month = _monthsOverAll-(_year*12);
+		mainProperties.currentMonth.month++;
+		mainProperties.currentMonth.day = 1;
 		await _setBackground();
+		await _saveCurrentDate();
 		_mainController.add(mainProperties);
 		return true;
 	}
 
 	Future<bool> _setBackground() async
 	{
-		if(mainProperties.currentMonth==12||mainProperties.currentMonth<=2)
+		if
+		(
+			mainProperties.currentMonth.month == 12
+			||
+			mainProperties.currentMonth.month <= 2
+		)
 		{
 			mainProperties.backgroundImage = 'assets/winter.png';
 		}
-		if(mainProperties.currentMonth>=3&&mainProperties.currentMonth<=5)
+		if
+		(
+			mainProperties.currentMonth.month >= 3
+			&&
+			mainProperties.currentMonth.month <= 5
+		)
 		{
 			mainProperties.backgroundImage = 'assets/spring.png';
 		}
-		if(mainProperties.currentMonth>=6&&mainProperties.currentMonth<=8)
+		if
+		(
+			mainProperties.currentMonth.month >= 6
+			&&
+			mainProperties.currentMonth.month <= 8
+		)
 		{
 			mainProperties.backgroundImage = 'assets/summer.png';
 		}
-		if(mainProperties.currentMonth>=9&&mainProperties.currentMonth<=11)
+		if
+		(
+			mainProperties.currentMonth.month >=  9
+			&&
+			mainProperties.currentMonth.month <= 11
+		)
 		{
 			mainProperties.backgroundImage = 'assets/autumn.png';
 		}
+		return true;
+	}
+
+	Future<bool> _saveCurrentDate() async
+	{
+		await this.characterBloc.setCurrentDate(mainProperties.currentMonth);
 		return true;
 	}
 

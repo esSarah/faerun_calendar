@@ -68,6 +68,18 @@ class LoadIinitialCharacterList extends CharacterEvent
 
 }
 
+class SetPartyDate extends CharacterEvent
+{
+	final FaerunDate partyDate;
+	SetPartyDate ({@required this.partyDate}) : super([partyDate]);
+}
+
+class SetCurrentDate extends CharacterEvent
+{
+	final FaerunDate currentDate;
+	SetCurrentDate ({@required this.currentDate}) : super([currentDate]);
+}
+
 class LoadCharacterEvent  extends CharacterEvent
 {
 	final int id;
@@ -237,39 +249,6 @@ class CharacterBloc
 
 	Future<bool> loadCharacter(int byId) async
 	{
-		List<Map> characterData = await db.read
-		(
-			'SELECT ID, Name FROM Character WHERE Id = ' + byId.toString()
-		);
-
-		characterData.forEach
-		(
-			(char)
-			{
-				characterProperties.id            = char[ 'ID'   ];
-				characterProperties.characterName = char[ 'Name' ];
-			}
-		);
-
-		List<Map> dateData = await db.read
-		(
-			'''
-			SELECT  
-			[Dates].[Year] AS CharYear, 
-			[Dates].[Month] AS CharMonth, 
-			[Dates].[Day] AS CharDay, 
-			[Value].[Label] AS CharLabel
-			FROM [Value] INNER JOIN [Dates]
-			ON [Dates].[ID] = [Value].[ValueInteger] 
-			WHERE [Value].[CharacterID] = ${characterProperties.id} 
-			AND 
-			(
-				[Value].[Label] = 'CurrentDate'
-				OR
-				[Value].[Label] = 'PartyDate'
-			)
-			'''
-		);
 		int _selectedYear;
 		int _selectedMonth;
 		int _selectedDay;
@@ -278,48 +257,53 @@ class CharacterBloc
 		int _partyMonth;
 		int _partyDay;
 
-		dateData.forEach
+		List<Map> characterData = await db.read
 		(
-			(dates)
+			'''
+			SELECT
+			[Character].[ID]      AS ID,
+			[Character].[Name]    AS Name,
+			[CurrentDate].[Year]  AS CurrentYear,
+			[CurrentDate].[Month] AS CurrentMonth,
+			[CurrentDate].[Day]   AS CurrentDay,
+			[PartyDate].[Year]    AS PartyYear,
+			[PartyDate].[Month]   AS PartyMonth,
+			[PartyDate].[Day]     AS PartyDay
+			FROM [Character]
+			
+			INNER JOIN Dates CurrentDate
+			ON 
+			[Character].[CurrentDateID] = CurrentDate.[ID]
+			
+			INNER JOIN Dates PartyDate
+			ON 
+			[Character].[PartyDateID] = PartyDate.[ID]
+			
+			WHERE [Character].[ID] = $byId
+			'''
+		);
+
+		characterData.forEach
+		(
+			(char)
 			{
-				int _year  = dates[ 'CharYear'  ];
-				int _month = dates[ 'CharMonth' ];
-				int _day =  dates[ 'CharDay'   ];
-				String _type  = dates[ 'CharLabel' ];
-				if(_type == 'CurrentDate')
-				{
-					_selectedYear  = _year;
-					_selectedMonth = _month;
-					_selectedDay   = _day;
-				}
-				else
-				{
-					_partyYear  = _year;
-					_partyMonth = _month;
-					_partyDay   = _day;
-				}
+
+
+				characterProperties.id            = char[ 'ID'   ];
+				characterProperties.characterName = char[ 'Name' ];
+
+				_selectedYear  = char[ 'CurrentYear'  ];
+				_selectedMonth = char[ 'CurrentMonth' ];
+				_selectedDay   = char[ 'CurrentDay'   ];
+
+				_partyYear     = char[ 'PartyYear'  ];
+				_partyMonth    = char[ 'PartyMonth' ];
+				_partyDay      = char[ 'PartyDay'   ];
 			}
 		);
 
-		bool _isValid = await characterProperties.selectedDate.loadDate(_selectedYear, _selectedMonth, _selectedDay);
-		if(!_isValid)
-		{
-			await characterProperties.selectedDate.loadDate(1490, 9, 6);
-		}
-
-		_isValid = await characterProperties.partyDate.loadDate(_partyYear, _partyMonth, _partyDay);
-		if(!_isValid)
-		{
-			await characterProperties.partyDate.loadDate(1490, 9, 6);
-		}
-
-
-		await db.read('''
-		UPDATE [Value] SET [ValueInteger] = ${characterProperties.id}
-		WHERE [Label]='CurrentCharacter' AND [CharacterID]=0
-		''');
-
-
+		await characterProperties.selectedDate.loadDate(_selectedYear, _selectedMonth, _selectedDay);
+		await characterProperties.partyDate.loadDate(_partyYear, _partyMonth, _partyDay);
 
 		return true;
 	}
@@ -423,6 +407,16 @@ class CharacterBloc
 		if(event is OthersAreReadyForCharacterChange)
 		{
 			_finalizeCharacterChange();
+		}
+
+		if(event is SetCurrentDate)
+		{
+			_setCurrentDate(event);
+		}
+
+		if(event is SetPartyDate)
+		{
+			_setPartyDate(event);
 		}
 	}
 
@@ -529,6 +523,49 @@ class CharacterBloc
 		characterProperties.state = CharacterStates.isReady;
 		_characterChangeController.add(characterRefreshroperties);
 		_characterController.add(characterProperties);
+	}
+
+	Future<bool> _setCurrentDate(SetCurrentDate event) async
+	{
+		await setCurrentDate(event.currentDate);
+		_characterController.add(characterProperties);
+		return(true);
+	}
+
+	Future<bool> setCurrentDate(FaerunDate newCurrentDate) async
+	{
+		await db.execute('''
+		UPDATE [Dates] SET 
+		[Year]  = ${newCurrentDate.year.currentYear},
+		[Month] = ${newCurrentDate.month},
+		[Day]   = ${newCurrentDate.day}
+		WHERE [ID] =
+		(
+			SELECT [CurrentDateID] FROM [Character]
+			WHERE 
+			[ID] = ${characterProperties.id}
+		)
+		''');
+		characterProperties.selectedDate = newCurrentDate;
+		return(true);
+	}
+
+	Future<bool> _setPartyDate(SetPartyDate event) async
+	{
+		await db.execute('''
+		UPDATE [Dates] SET 
+		[Year]  = ${event.partyDate.year.currentYear},
+		[Month] = ${event.partyDate.month},
+		[Day]   = ${event.partyDate.day}
+		WHERE [ID] =
+		(
+			SELECT [PartyDateID] FROM [Character]
+			WHERE 
+			[ID] = ${characterProperties.id}
+		)
+		''');
+		characterProperties.partyDate = event.partyDate;
+		return(true);
 	}
 	//endregion
 

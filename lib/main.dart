@@ -31,19 +31,7 @@ class MyApp extends StatelessWidget
       initialRoute: '/',
       theme: ThemeData
       (
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
         primarySwatch: Colors.blue,
-        // This makes the visual density adapt to the platform that you run
-        // the app on. For desktop platforms, the controls will be smaller and
-        // closer together (more dense) than on mobile platforms.
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
       home: MyHomePage(mainBloc: mainBloc),
@@ -83,9 +71,9 @@ class _MyHomePageState extends State<MyHomePage>
   sizing.Proportions proportions = new sizing.Proportions();
 
   // will be 5% of portrait mode height
-  double   headerHeight = 0;
-
-  bool isPortrait = true;
+  double headerHeight = 0;
+  int    currentCarouselMonth = 0;
+  bool   isPortrait   = true;
 
   @override
   Widget build(BuildContext context)
@@ -169,13 +157,14 @@ class _MyHomePageState extends State<MyHomePage>
                     ),
                     CarouselSlider.builder
                     (
-                      itemCount: 120000,
-                      options: CarouselOptions
+                      itemCount          : 120000,
+                      options            : CarouselOptions
                       (
                         height            : y - (100),
                         viewportFraction  : .95,
                         initialPage       :
-                        state.data.currentYear*12+state.data.currentMonth,
+                          state.data.currentMonth.year.currentYear * 12
+                          + state.data.currentMonth.month - 1,
                         aspectRatio       : xy,
                         enlargeCenterPage : false,
                         autoPlay          : false,
@@ -185,6 +174,7 @@ class _MyHomePageState extends State<MyHomePage>
                           (
                             ()
                             {
+                              currentCarouselMonth = index;
                               mainBloc.mainEvents.add
                               (
                                 MainMonthSelectedEvent(newMonth: index)
@@ -208,13 +198,20 @@ class _MyHomePageState extends State<MyHomePage>
                         );
                       },
                     ),
-                  ],
+                   ],
                 ),
               ],
-            )
+            ),
           );
         }
       }
     );
+
+    /* Experimental code that didn't work out but I might come back to
+    if(currentCarouselMonth!=(mainBloc.mainProperties.currentYear*12+mainBloc.mainProperties.currentMonth))
+    {
+      blocCarouselController.jumpToPage(mainBloc.mainProperties.currentYear*12+mainBloc.mainProperties.currentMonth);
+    }*/
+
   }
 }
