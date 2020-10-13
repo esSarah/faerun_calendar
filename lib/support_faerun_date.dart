@@ -1,5 +1,3 @@
-
-
 class Day
 {
 	String label;
@@ -104,6 +102,7 @@ class Year
 			_specialDay = new Day();
 			await _specialDay.initializeDay('Schildtreffen');
 			_month.addSpecialDay(_specialDay);
+			print('Schildtreffen added ' + _month.days.length.toString());
 		}
 		months.add(_month);
 

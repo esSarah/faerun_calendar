@@ -5,19 +5,21 @@ import 'main_bloc.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/cupertino.dart';
+import 'support_faerun_date.dart';
+import 'date_selection_bloc.dart';
 
 
 class CharacterSelection extends StatefulWidget
 {
 	CharacterSelection
-			(
-			{
-				Key key,
-				this.mainBloc
-			}
-			)
-			:
-				super(key: key);
+	(
+		{
+			Key key,
+			this.mainBloc
+		}
+	)
+	:
+	super(key: key);
 	final MainBloc mainBloc;
 
 	@override
@@ -26,13 +28,19 @@ class CharacterSelection extends StatefulWidget
 
 class _CharacterSelectionState extends State<CharacterSelection>
 {
-	MainBloc _mainBloc;
+	MainBloc      _mainBloc;
 	CharacterBloc _characterBloc;
-	bool isInfoVisible = false;
-	double x;
-	double y;
-	bool isPortrait = true;
-	String newCharacterName = '';
+	bool          isInfoVisible    = false;
+	double        x;
+	double        y;
+	bool          isPortrait       = true;
+	String        newCharacterName = '';
+
+	int           currentYear;
+	int           currentMonth;
+	int           currentDay;
+	FaerunDate    currentFaerunDate = new FaerunDate();
+	DateSelectionBloc partyDateSelection;
 
 	@override
 	initState()
@@ -140,11 +148,11 @@ class _CharacterSelectionState extends State<CharacterSelection>
 											else
 											{
 												widgets.add
-												(
-													showCreateNewCharacterHeader
-														(
-															state,
-															characterState
+													(
+														showCreateNewCharacterHeader
+															(
+																state,
+																characterState
 														)
 												);
 											}
@@ -152,7 +160,7 @@ class _CharacterSelectionState extends State<CharacterSelection>
 
 										characterState.data.availableCharacters.forEach
 											(
-														(characterFromList)
+												(characterFromList)
 												{
 													int    currentID   = characterFromList.id;
 													String currentName = characterFromList.characterName;
@@ -160,45 +168,45 @@ class _CharacterSelectionState extends State<CharacterSelection>
 													if (currentID != characterState.data.id)
 													{
 														widgets.add
+														(
+															new ListTile
 															(
-																new ListTile
+																leading:
+																Icon
 																	(
-																		leading:
-																		Icon
-																			(
-																			FontAwesomeIcons.userSecret,
-																			size  : 20,
-																			color : Colors.white,
-																		),
+																	FontAwesomeIcons.userSecret,
+																	size  : 20,
+																	color : Colors.white,
+																),
 
-																		title:
-																		Text
-																			(
-																				currentName,
-																				style: TextStyle
-																					(
-																					fontFamily : 'NugieRomantic',
-																					fontWeight : FontWeight.w300,
-																				)
-																		),
+																title:
+																Text
+																(
+																	currentName,
+																	style: TextStyle
+																	(
+																		fontFamily : 'NugieRomantic',
+																		fontWeight : FontWeight.w300,
+																	)
+																),
 
-																		trailing:
-																		IconButton
+																trailing:
+																IconButton
+																	(
+																	icon: Icon
+																		(
+																		FontAwesomeIcons.play,
+																		size: 20,
+																	),
+																	onPressed: ()
+																	{
+																		_mainBloc.characterBloc.characterEvents.add
 																			(
-																			icon: Icon
-																				(
-																				FontAwesomeIcons.play,
-																				size: 20,
-																			),
-																			onPressed: ()
-																			{
-																				_mainBloc.characterBloc.characterEvents.add
-																					(
-																						LoadCharacterEvent(id: currentID)
-																				);
-																			},
-																		)
+																				LoadCharacterEvent(id: currentID)
+																		);
+																	},
 																)
+															)
 														);
 													}
 												}
@@ -342,18 +350,21 @@ class _CharacterSelectionState extends State<CharacterSelection>
 	{
 		return Container
 		(
-			child:
-			Row
-				( // show selected character
-					children: <Widget>
-					[
-						Icon
-						(
-							Icons.portrait,
-							size  : 80,
-							color : Color.fromARGB(230, 240, 180, 100)
-						),
-						Column
+			child:Column
+			(
+				children: <Widget>
+				[
+					Row
+					( // show selected character
+						children: <Widget>
+						[
+							Icon
+							(
+								Icons.portrait,
+								size  : 80,
+								color : Color.fromARGB(230, 240, 180, 100)
+							),
+							Column
 							(
 								children: <Widget>
 								[
@@ -368,19 +379,19 @@ class _CharacterSelectionState extends State<CharacterSelection>
 										)
 									),
 									SizedBox
-										(
+									(
 										width : x - 110,
 										child :
 										AutoSizeText
+										(
+											state.data.characterProperties.characterName,
+											maxLines : 3,
+											style    : new TextStyle
 											(
-												state.data.characterProperties.characterName,
-												maxLines : 3,
-												style    : new TextStyle
-													(
-													fontSize   : 30,
-													fontFamily : 'NugieRomantic',
-													fontWeight : FontWeight.w300,
-												)
+												fontSize   : 30,
+												fontFamily : 'NugieRomantic',
+												fontWeight : FontWeight.w300,
+											)
 										),
 									),
 									IconButton
@@ -393,53 +404,60 @@ class _CharacterSelectionState extends State<CharacterSelection>
 										onPressed: ()
 										{
 											_mainBloc.characterBloc.characterEvents.add
-												(
-													ChangeModeToEditCharacterEvent()
+											(
+												ChangeModeToEditCharacterEvent()
 											);
 										},
 									),
 								]
-						)
-					]
-			),
+							),
+						]
+					),
+					showEditPartyDate(state, characterState),
+				],
+			)
 		);
 	}
 
 	Widget showEditCurrentCharacterHeader
-			(
-			AsyncSnapshot state,
-			AsyncSnapshot characterState
-			)
+	(
+		AsyncSnapshot state,
+		AsyncSnapshot characterState
+	)
 	{
-		return Row // Show edit form for currently selected character
+		return Column
 			(
-				children: <Widget>
-				[
-					Icon
-					(
-						FontAwesomeIcons.userEdit,
-						size: 80,
-						color : Color.fromARGB(230, 240, 180, 100),
-					),
+			children: <Widget>
+			[
+				Row // Show edit form for currently selected character
+				(
+					children: <Widget>
+					[
+						Icon
+						(
+							FontAwesomeIcons.userEdit,
+							size: 80,
+							color : Color.fromARGB(230, 240, 180, 100),
+						),
 
-					Column
+						Column
 						(
 							children: <Widget>
 							[
 								AutoSizeText
-									(
-										characterState.data.id == _mainBloc.characterBloc.defaultCharacter
-												?
+								(
+									characterState.data.id == _mainBloc.characterBloc.defaultCharacter
+									?
 										'Charakter bearbeiten'
-												:
+									:
 										'Charakter bearbeiten oder löschen',
 
-										maxFontSize : 15,
-										style       : new TextStyle
-											(
-											fontFamily : 'NugieRomantic',
-											fontWeight : FontWeight.w300,
-										)
+									maxFontSize : 15,
+									style       : new TextStyle
+									(
+										fontFamily : 'NugieRomantic',
+										fontWeight : FontWeight.w300,
+									)
 								),
 								SizedBox
 								(
@@ -451,16 +469,16 @@ class _CharacterSelectionState extends State<CharacterSelection>
 										children: <Widget>
 										[
 											TextField
-												(
+											(
 												onChanged: (value)
 												{
 													newCharacterName = value;
 													_mainBloc.characterBloc.characterEvents.add
+													(
+														CharacterEvaluationEvent
 														(
-															CharacterEvaluationEvent
-															(
-																suggestedName : newCharacterName
-															)
+															suggestedName : newCharacterName
+														)
 													);
 												},
 											),
@@ -487,66 +505,66 @@ class _CharacterSelectionState extends State<CharacterSelection>
 
 														characterState.data.id !=
 																_mainBloc.characterBloc.defaultCharacter
-																?
-														IconButton
+														?
+															IconButton
 															(
-															icon: Icon
+																icon: Icon
 																(
-																FontAwesomeIcons.trash,
-																color: Colors.red,
-																size : 20,
-															),
-															onPressed: ()
-															{
-																_mainBloc.characterBloc.characterEvents.add
-																	(
-																		DeleteCurrentCharacterEvent()
-																);
-															},
-														)
-																:
-														Text(''),
+																	FontAwesomeIcons.trash,
+																	color: Colors.red,
+																	size : 20,
+																),
+																onPressed: ()
+																{
+																	_mainBloc.characterBloc.characterEvents.add
+																		(
+																			DeleteCurrentCharacterEvent()
+																	);
+																},
+															)
+														:
+															Text(''),
 
 														IconButton
-															(
+														(
 															icon: Icon
-																(
+															(
 																FontAwesomeIcons.ban,
 																size: 20,
 															),
 															onPressed: ()
 															{
 																_mainBloc.characterBloc.characterEvents.add
-																	(
-																		CancelCharacterEditEvent()
+																(
+																	CancelCharacterEditEvent()
 																);
 															},
 														),
 
 														characterState.data.currentNameSuggestionIsValid
-																?
+													?
 														IconButton
-															(
-																icon: Icon
-																	(
-																	FontAwesomeIcons.check,
-																	color: Colors.green,
-																	size: 20,
-																),
-
-																onPressed: ()
-																{
-																	_mainBloc.characterBloc.characterEvents.add
-																		(
-																			ChangeCharacterEvent()
-																	);
-																}
-														)
-																:
-														IconButton
-															(
+														(
 															icon: Icon
+															(
+																FontAwesomeIcons.check,
+																color: Colors.green,
+																size: 20,
+															),
+
+															onPressed: ()
+															{
+																_mainBloc.characterBloc.characterEvents.add
 																(
+																	ChangeCharacterEvent()
+																);
+															}
+														)
+													:
+														IconButton
+														(
+															icon: Icon
+															(
 																FontAwesomeIcons.check,
 																color: Colors.grey,
 																size: 20,
@@ -559,8 +577,11 @@ class _CharacterSelectionState extends State<CharacterSelection>
 									),
 								),
 							]
-					)
-				]
+						)
+					]
+				),
+				showEditPartyDate(state, characterState),
+			],
 		);
 	}
 
@@ -570,37 +591,41 @@ class _CharacterSelectionState extends State<CharacterSelection>
 		AsyncSnapshot characterState
 	)
 	{
-		return Row
-			(
-			// show edit form for new character
-				children: <Widget>
-				[
-					Icon
-					(
-						FontAwesomeIcons.userPlus,
-						size  : 80,
-						color : Color.fromARGB(230, 240, 180, 100),
-					),
-					Column
+		return Column
+		(
+			children: <Widget>
+			[
+				Row
+				(
+				// show edit form for new character
+					children: <Widget>
+					[
+						Icon
+						(
+							FontAwesomeIcons.userPlus,
+							size  : 80,
+							color : Color.fromARGB(230, 240, 180, 100),
+						),
+						Column
 						(
 							children: <Widget>
 							[
 								AutoSizeText
+								(
+									'Neuen Charakter erstellen',
+									maxFontSize : 15,
+									style: new TextStyle
 									(
-										'Neuen Charakter erstellen',
-										maxFontSize : 15,
-										style: new TextStyle
-											(
-											fontFamily : 'NugieRomantic',
-											fontWeight : FontWeight.w300,
-										)
+										fontFamily : 'NugieRomantic',
+										fontWeight : FontWeight.w300,
+									)
 								),
 								SizedBox
-									(
+								(
 									width : x - 110,
 									child :
 									Column
-										(
+									(
 										crossAxisAlignment: CrossAxisAlignment.start,
 										children: <Widget>
 										[
@@ -622,65 +647,392 @@ class _CharacterSelectionState extends State<CharacterSelection>
 											(
 												width: x - 110,
 												child: Row
-													(
-														crossAxisAlignment: CrossAxisAlignment.end,
-														children: <Widget>
-														[
-															IconButton
+												(
+													crossAxisAlignment: CrossAxisAlignment.end,
+													children: <Widget>
+													[
+														IconButton
+														(
+															icon: Icon
 															(
-																icon: Icon
+																FontAwesomeIcons.ban,
+																size : 20,
+															),
+															onPressed: ()
+															{
+																_mainBloc.characterBloc.characterEvents.add
 																(
-																	FontAwesomeIcons.ban,
-																	size : 20,
-																),
-																onPressed: ()
-																{
-																	_mainBloc.characterBloc.characterEvents.add
-																		(
-																			CancelCharacterEditEvent()
-																	);
-																},
+																	CancelCharacterEditEvent()
+																);
+															},
+														),
+
+														characterState.data.currentNameSuggestionIsValid
+													?
+														IconButton
+														(
+															icon: Icon
+															(
+																FontAwesomeIcons.check,
+																color : Colors.green,
+																size  : 20,
 															),
 
-															characterState.data.currentNameSuggestionIsValid
-																	?
-															IconButton
-															(
-																icon: Icon
-																	(
-																	FontAwesomeIcons.check,
-																	color : Colors.green,
-																	size  : 20,
-																),
-
-																onPressed: ()
-																{
-																	_mainBloc.characterBloc.characterEvents.add
-																		(
-																			ChangeCharacterEvent()
-																	);
-																}
-															)
-																	:
-															IconButton
+															onPressed: ()
+															{
+																_mainBloc.characterBloc.characterEvents.add
 																(
-																icon: Icon
-																	(
-																	FontAwesomeIcons.check,
-																	color : Colors.grey,
-																	size  : 20,
-																),
+																	ChangeCharacterEvent()
+																);
+															}
+														)
+													:
+														IconButton
+														(
+															icon: Icon
+															(
+																FontAwesomeIcons.check,
+																color : Colors.grey,
+																size  : 20,
 															),
-
-														]
+														),
+													]
 												),
 											),
 										],
 									),
 								),
 							]
-					)
-				]
+						)
+					]
+				),
+				showEditPartyDate(state, characterState),
+			],
 		);
 	}
+	Widget showEditPartyDate
+	(
+		AsyncSnapshot state,
+		AsyncSnapshot characterState
+	)
+	{
+		List<Widget> yearDigits  =  Digits(10000);
+		// Months names are always the same, but I have to get them somewhere once.
+		List<Widget> monthDigits =  MonthNames(characterState.data.partyDate.year);
+
+		 partyDateSelection =
+			new DateSelectionBloc(characterState.data.partyDate);
+
+		List<Widget> currentDates = DayNames
+		(
+				characterState.data.partyDate.year.months
+			[
+				characterState.data.partyDate.month-1
+			]
+		);
+		currentDay = characterState.data.partyDate.day;
+
+
+		FixedExtentScrollController _yearsScrollController =
+		FixedExtentScrollController
+		(
+			initialItem: characterState.data.partyDate.year.currentYear
+		);
+
+		FixedExtentScrollController _monthsScrollController =
+		FixedExtentScrollController
+		(
+			initialItem: characterState.data.partyDate.month-1
+		);
+
+		FixedExtentScrollController _daysScrollController =
+		FixedExtentScrollController
+		(
+				initialItem: characterState.data.partyDate.day-1 //currentDay
+		);
+
+		CupertinoPicker refreshableDayPicker =
+		dayPicker(currentDates);
+
+		return StreamBuilder
+		(
+			stream: partyDateSelection.dateSelection,
+			builder:
+			(
+				BuildContext  context,
+				AsyncSnapshot dateState,
+			)
+		{
+			if (dateState.data==null||dateState.data.status != DateSelectionStates.ready)
+			{
+				partyDateSelection.poke();
+				return Text('Noch nicht');
+			}
+			else
+			{
+return StatefulBuilder
+				(
+					builder: (BuildContext context, StateSetter setState)
+						{
+							setState
+							(
+								()
+								{
+									currentDates = DayNames
+										(dateState.data.selectedMonth);
+									refreshableDayPicker =
+											dayPicker(currentDates);
+								}
+							);
+							return Row
+							(
+								mainAxisAlignment: MainAxisAlignment.start,
+								children: <Widget>
+								[
+									Column
+									(
+										mainAxisAlignment: MainAxisAlignment.start,
+
+										crossAxisAlignment: CrossAxisAlignment.center,
+										children: <Widget>
+										[
+											Text
+											(
+												'Jahr',
+												style: new TextStyle
+												(
+													color: Colors.black,
+
+													fontSize: 20,
+													fontFamily: 'NugieRomantic',
+													fontWeight: FontWeight.w300
+												),
+
+											),
+											SizedBox
+											(
+												width: 70,
+												height: 100,
+												child: CupertinoPicker
+												(
+													scrollController: _yearsScrollController,
+													magnification: 1.2,
+
+													children: yearDigits,
+													itemExtent: 20,
+													//height of each item
+													useMagnifier: true,
+
+													squeeze: 1,
+
+													looping: false,
+													onSelectedItemChanged: (int index)
+													{
+														partyDateSelection.dateSelectionEvents.add
+														(
+															new SetYearEvent(newYear: index)
+														);
+														print(index);
+													},
+												),
+											),
+										],
+									),
+
+									Column
+									(
+										mainAxisAlignment: MainAxisAlignment.start,
+
+										crossAxisAlignment: CrossAxisAlignment.center,
+										children: <Widget>
+										[
+											Text
+											(
+												'Monat',
+												style: new TextStyle
+												(
+													color: Colors.black,
+													fontSize: 20,
+													fontFamily: 'NugieRomantic',
+													fontWeight: FontWeight.w300
+												),
+											),
+											SizedBox
+											(
+												width: 170,
+												height: 100,
+												child: CupertinoPicker
+												(
+													scrollController: _monthsScrollController,
+													magnification: 1.2,
+
+													children: monthDigits,
+
+													itemExtent: 20,
+													//height of each item
+													useMagnifier: true,
+													squeeze: 1,
+													looping: true,
+													onSelectedItemChanged: (int index)
+													{
+														partyDateSelection.dateSelectionEvents.add
+														(
+															new SetMonthEvent(newMonth: index+1)
+														);
+
+														print(index);
+													},
+												),
+											),
+										]
+									),
+									Column
+									(
+										mainAxisAlignment: MainAxisAlignment.start,
+										crossAxisAlignment: CrossAxisAlignment.center,
+										children: <Widget>
+										[
+											Text
+											(
+												'Tag',
+												style: new TextStyle
+												(
+													fontSize: 20,
+													color: Colors.black,
+													fontFamily: 'NugieRomantic',
+													fontWeight: FontWeight.w300
+												),
+											),
+											SizedBox
+											(
+												width: 170,
+												height: 100,
+												child: refreshableDayPicker,
+											),
+										]
+									)
+								]
+							);
+						}
+					);
+				}
+			}
+		);
+	}
+
+	List<Widget> Digits(int number)
+	{
+		print('Digits called for ' + number.toString() + ' years');
+		List<Widget> newDigitList = new List<Widget>();
+		for (int currentDigit = 0; currentDigit < number; currentDigit++)
+		{
+			newDigitList.add
+			(
+				new Text
+				(
+					currentDigit.toString(),
+					textScaleFactor: .8,
+					style: new TextStyle
+					(
+						color: Colors.black,
+						fontFamily : 'NugieRomantic',
+						fontWeight: FontWeight.w300
+					),
+				),
+			);
+		}
+		return newDigitList;
+	}
+
+	List<Widget> MonthNames(Year aYear)
+	{
+		print('MonthNames called for year: ' + aYear.currentYear.toString());
+		List<Widget> monthWidgets = new List<Widget>();
+		aYear.months.forEach
+		(
+			(element)
+			{
+				monthWidgets.add
+				(
+					Text
+					(
+						element.label,
+						textScaleFactor: .8,
+						style: new TextStyle
+						(
+							color: Colors.black,
+							fontFamily : 'NugieRomantic',
+							fontWeight: FontWeight.w300
+						),
+					)
+				);
+			}
+		);
+		return monthWidgets;
+	}
+
+	List<Widget> DayNames(Month aMonth)
+	{
+		print('DayNames called for month ' + aMonth.label +
+				' of length ' + aMonth.days.length.toString());
+		List<Widget> _dayNames = new List<Widget>();
+		aMonth.days.forEach
+		(
+			(element)
+			{
+				_dayNames .add
+				(
+					Text
+					(
+						element.label,
+						textScaleFactor: .8,
+						style: new TextStyle
+						(
+							color: Colors.black,
+							fontFamily : 'NugieRomantic',
+							fontWeight: FontWeight.w300
+						),
+					)
+				);
+			}
+		);
+		print('Daynames done');
+		return _dayNames;
+	}
+
+	CupertinoPicker dayPicker(List<Widget> currentDates)
+	{
+
+		if(currentDay>currentDates.length)
+		{
+			currentDay = currentDates.length;
+		}
+		FixedExtentScrollController _daysScrollController =
+		FixedExtentScrollController
+		(
+			initialItem: currentDay
+		);
+		return CupertinoPicker
+		(
+			scrollController: _daysScrollController,
+			magnification: 1.2,
+
+			children: currentDates,
+
+			itemExtent: 20, //height of each item
+			useMagnifier: true,
+
+			squeeze: 1,
+
+			looping: true,
+			onSelectedItemChanged: (int index)
+			{
+				partyDateSelection.dateSelectionEvents.add
+				(
+					new SetDayEvent(dayOfMonth: index+1)
+				);
+			},
+		);
+	}
+
 }
