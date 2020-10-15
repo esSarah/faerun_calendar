@@ -16,6 +16,7 @@ enum mainStates
 class MainProperties
 {
 	FaerunDate currentMonth = new FaerunDate();
+	//FaerunDate partyDate    = new FaerunDate();
 
 	double currentWidth    = 0;
 	double currentHeight   = 0;
@@ -171,9 +172,10 @@ class MainBloc
 		if(mainProperties.characterProperties.id!=0)
 		{
 			mainProperties.currentMonth.year  =
-					characterBloc.characterProperties.selectedDate.year;
+					characterBloc.characterProperties.currentDate.year;
 			mainProperties.currentMonth.month =
-				characterBloc.characterProperties.selectedDate.month;
+				characterBloc.characterProperties.currentDate.month;
+
 			mainProperties.status = mainStates.isUserSelected;
 			_mainController.add(mainProperties);
 		}
@@ -340,7 +342,7 @@ class MainBloc
 	{
 		int currentCharacter = 0;
 		currentCharacter     = await findCharacter();
-		if(currentCharacter==0)
+		if(currentCharacter == 0)
 		{
 			characterBloc.characterEvents.add(LoadDefaultCharacterEvent());
 		}

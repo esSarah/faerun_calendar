@@ -7,6 +7,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/cupertino.dart';
 import 'support_faerun_date.dart';
 import 'date_selection_bloc.dart';
+import 'support_sizing.dart';
 
 
 class CharacterSelection extends StatefulWidget
@@ -32,8 +33,7 @@ class _CharacterSelectionState extends State<CharacterSelection>
 	CharacterBloc _characterBloc;
 	bool          isInfoVisible    = false;
 	double        x;
-	double        y;
-	bool          isPortrait       = true;
+	double        xf;
 	String        newCharacterName = '';
 
 	int           currentYear;
@@ -52,29 +52,20 @@ class _CharacterSelectionState extends State<CharacterSelection>
 
 	Widget build(BuildContext context)
 	{
-		x = MediaQuery
-				.of(context)
-				.size
-				.width;
-		y = MediaQuery
-				.of(context)
-				.size
-				.height;
 
-		isPortrait = (x < y);
 
 		return StreamBuilder
 			(
 				stream: _mainBloc.master,
 				builder:
-						(
-						BuildContext  context,
-						AsyncSnapshot state,
-						)
+				(
+					BuildContext  context,
+					AsyncSnapshot state,
+				)
 				{
 					if
 					(
-					state.data == null ||
+						state.data == null ||
 							state.data.status == mainStates.isInitializing
 					)
 					{
@@ -86,256 +77,261 @@ class _CharacterSelectionState extends State<CharacterSelection>
 					}
 					else
 					{
+						Proportions proportions = new Proportions();
+						proportions.refreshProportions(context);
+						x  = proportions.x;
+						xf = proportions.xf;
+
 						return StreamBuilder
+						(
+							stream  : _characterBloc.character,
+							builder :
 							(
-								stream  : _characterBloc.character,
-								builder :
-										(
-										BuildContext  context,
-										AsyncSnapshot characterState,
-										)
+								BuildContext  context,
+								AsyncSnapshot characterState,
+							)
+							{
+								if
+								(
+									characterState.data == null ||
+										characterState.data.state != CharacterStates.isReady
+								)
 								{
+									if (characterState.data == null)
+									{
+										_mainBloc.characterBloc.poke();
+									}
+									return Scaffold
+									(
+										body: Text(''),
+									);
+								}
+								else
+								{
+									List<Widget> widgets = new List<Widget>();
 									if
 									(
-									characterState.data == null ||
-											characterState.data.state != CharacterStates.isReady
+									characterState.data.editState ==
+											CharacterEditingStates.isNotBeingEdited
 									)
 									{
-										if (characterState.data == null)
-										{
-											_mainBloc.characterBloc.poke();
-										}
-										return Scaffold
+										widgets.add
+										(
+											showCharacterHeader
 											(
-											body: Text(''),
+												state,
+												characterState
+											)
 										);
 									}
 									else
 									{
-										List<Widget> widgets = new List<Widget>();
 										if
 										(
-										characterState.data.editState ==
-												CharacterEditingStates.isNotBeingEdited
+											characterState.data.editState ==
+												CharacterEditingStates.ChangeCurrentCharacter
 										)
 										{
 											widgets.add
-												(
-													showCharacterHeader
-														(
-															state,
-															characterState
-													)
-											);
-										}
-										else
-										{
-											if
 											(
-											characterState.data.editState ==
-													CharacterEditingStates.ChangeCurrentCharacter
-											)
-											{
-												widgets.add
-													(
-														showEditCurrentCharacterHeader
-															(
-																state,
-																characterState
-														)
-												);
-											}
-											else
-											{
-												widgets.add
-													(
-														showCreateNewCharacterHeader
-															(
-																state,
-																characterState
-														)
-												);
-											}
-										}
-
-										characterState.data.availableCharacters.forEach
-											(
-												(characterFromList)
-												{
-													int    currentID   = characterFromList.id;
-													String currentName = characterFromList.characterName;
-
-													if (currentID != characterState.data.id)
-													{
-														widgets.add
-														(
-															new ListTile
-															(
-																leading:
-																Icon
-																	(
-																	FontAwesomeIcons.userSecret,
-																	size  : 20,
-																	color : Colors.white,
-																),
-
-																title:
-																Text
-																(
-																	currentName,
-																	style: TextStyle
-																	(
-																		fontFamily : 'NugieRomantic',
-																		fontWeight : FontWeight.w300,
-																	)
-																),
-
-																trailing:
-																IconButton
-																	(
-																	icon: Icon
-																		(
-																		FontAwesomeIcons.play,
-																		size: 20,
-																	),
-																	onPressed: ()
-																	{
-																		_mainBloc.characterBloc.characterEvents.add
-																			(
-																				LoadCharacterEvent(id: currentID)
-																		);
-																	},
-																)
-															)
-														);
-													}
-												}
-										);
-										if (characterState.data.availableCharacters.length > 1)
-										{
-											widgets.add
+												showEditCurrentCharacterHeader
 												(
-													new Divider()
-											);
-										}
-										widgets.add
-											(
-											new ListTile
-												(
-													leading  : Text(''),
-													title    : Text
-														(
-															'Erstelle ',
-															style: TextStyle
-																(
-																fontFamily : 'NugieRomantic',
-																fontWeight : FontWeight.w300,
-															)
-													),
-													subtitle : Text
-														(
-															'neuen Charakter',
-															style: TextStyle
-																(
-																fontFamily : 'NugieRomantic',
-																fontWeight : FontWeight.w300,
-															)
-													),
-													trailing : IconButton
-														(
-														icon: Icon
-															(
-															FontAwesomeIcons.userPlus,
-															size : 20,
-														),
-														onPressed: ()
-														{
-															_mainBloc.characterBloc.characterEvents.add
-																(
-																	ChangeModeToNewCharacterEvent()
-															);
-														},
-													)
-											),
-										);
-
-// Info tile
-										if (isInfoVisible)
-										{
-											widgets.add
-												(
-												new ListTile
-													(
-														leading: Text(''),
-														title: Text('Version'),
-														subtitle: Text('Beta 15'),
-														trailing: IconButton
-															(
-															icon: Icon
-																(
-																FontAwesomeIcons.infoCircle,
-																size: 20,
-																color: Colors.white,
-															),
-															onPressed: ()
-															{
-																setState
-																	(
-																				()
-																		{
-																			isInfoVisible = !isInfoVisible;
-																		}
-																);
-															},
-														)
-												),
-											);
-										}
-										else
-										{
-											widgets.add
-												(
-												new ListTile
-													(
-														leading  : Text(''),
-														title    : Text(''),
-														subtitle : Text(''),
-														trailing : IconButton
-															(
-															icon : Icon
-																(
-																FontAwesomeIcons.infoCircle,
-																size: 20,
-																color: Colors.white10,
-															),
-															onPressed: ()
-															{
-																setState
-																	(
-																				()
-																		{
-																			isInfoVisible = !isInfoVisible;
-																		}
-																);
-															},
-														)
-												),
-											);
-										}
-
-										return Scaffold
-											(
-												body: ListView.builder
-													(
-													itemCount: widgets.length,
-													itemBuilder: (context, index)
-													{
-														return widgets[index];
-													},
+													state,
+													characterState
 												)
+											);
+										}
+										else
+										{
+											widgets.add
+											(
+												showCreateNewCharacterHeader
+												(
+													state,
+													characterState
+												)
+											);
+										}
+									}
+									widgets.add(new Divider());
+									characterState.data.availableCharacters.forEach
+									(
+										(characterFromList)
+										{
+											int    currentID   = characterFromList.id;
+											String currentName = characterFromList.characterName;
+
+											if (currentID != characterState.data.id)
+											{
+												widgets.add
+												(
+													new ListTile
+													(
+														leading:
+														Icon
+														(
+															FontAwesomeIcons.userSecret,
+															size  : 20 * xf,
+															color : Colors.white,
+														),
+
+														title:
+														Text
+														(
+															currentName,
+															style: TextStyle
+															(
+																fontFamily : 'NugieRomantic',
+																fontWeight : FontWeight.w300,
+															)
+														),
+
+														trailing:
+														IconButton
+														(
+															icon: Icon
+															(
+																FontAwesomeIcons.play,
+																size: 20 * xf,
+															),
+															onPressed: ()
+															{
+																_mainBloc.characterBloc.characterEvents.add
+																(
+																	LoadCharacterEvent(id: currentID)
+																);
+															},
+														)
+													)
+												);
+											}
+										}
+									);
+									if (characterState.data.availableCharacters.length > 1)
+									{
+										widgets.add
+										(
+											new Divider()
 										);
 									}
+									widgets.add
+									(
+										new ListTile
+										(
+											leading  : Text(''),
+											title    : Text
+											(
+												'Erstelle ',
+												style: TextStyle
+												(
+													fontFamily : 'NugieRomantic',
+													fontWeight : FontWeight.w300,
+												)
+											),
+											subtitle : Text
+											(
+												'neuen Charakter',
+												style: TextStyle
+												(
+													fontFamily : 'NugieRomantic',
+													fontWeight : FontWeight.w300,
+												)
+											),
+											trailing : IconButton
+											(
+												icon: Icon
+												(
+													FontAwesomeIcons.userPlus,
+													size : 20 * xf,
+												),
+												onPressed: ()
+												{
+													_mainBloc.characterBloc.characterEvents.add
+													(
+														ChangeModeToNewCharacterEvent()
+													);
+												},
+											)
+										),
+									);
+
+// Info tile
+									if (isInfoVisible)
+									{
+										widgets.add
+										(
+											new ListTile
+											(
+												leading  : Text(''),
+												title    : Text('Version'),
+												subtitle : Text('1.0'),
+												trailing : IconButton
+												(
+													icon: Icon
+													(
+														FontAwesomeIcons.infoCircle,
+														size: 20 * xf,
+														color: Colors.white,
+													),
+													onPressed: ()
+													{
+														setState
+														(
+															()
+															{
+																isInfoVisible = !isInfoVisible;
+															}
+														);
+													},
+												)
+											),
+										);
+									}
+									else
+									{
+										widgets.add
+										(
+											new ListTile
+											(
+												leading  : Text(''),
+												title    : Text(''),
+												subtitle : Text(''),
+												trailing : IconButton
+												(
+													icon : Icon
+													(
+														FontAwesomeIcons.infoCircle,
+														size: 20 * xf,
+														color: Colors.white10,
+													),
+													onPressed: ()
+													{
+														setState
+														(
+															()
+															{
+																isInfoVisible = !isInfoVisible;
+															}
+														);
+													},
+												)
+											),
+										);
+									}
+
+									return Scaffold
+									(
+										body: ListView.builder
+										(
+											itemCount: widgets.length,
+											itemBuilder: (context, index)
+											{
+												return widgets[index];
+											},
+										)
+									);
 								}
+							}
 						);
 					}
 				}
@@ -361,7 +357,7 @@ class _CharacterSelectionState extends State<CharacterSelection>
 							Icon
 							(
 								Icons.portrait,
-								size  : 80,
+								size  : 80 * xf,
 								color : Color.fromARGB(230, 240, 180, 100)
 							),
 							Column
@@ -370,7 +366,7 @@ class _CharacterSelectionState extends State<CharacterSelection>
 								[
 									AutoSizeText
 									(
-										'Aktuel gewählter Charakter',
+										'Aktuell gewählter Charakter',
 										maxFontSize : 15,
 										style       : new TextStyle
 										(
@@ -380,7 +376,7 @@ class _CharacterSelectionState extends State<CharacterSelection>
 									),
 									SizedBox
 									(
-										width : x - 110,
+										width : (x * xf) - (110 * xf) ,
 										child :
 										AutoSizeText
 										(
@@ -399,7 +395,7 @@ class _CharacterSelectionState extends State<CharacterSelection>
 										icon: Icon
 										(
 											FontAwesomeIcons.userEdit,
-											size : 20,
+											size : 20 * xf,
 										),
 										onPressed: ()
 										{
@@ -413,7 +409,8 @@ class _CharacterSelectionState extends State<CharacterSelection>
 							),
 						]
 					),
-					showEditPartyDate(state, characterState),
+					// showEditPartyDate(state, characterState, characterState.data.partyDate),
+					showEditPartyDate(characterState.data.partyDate),
 				],
 			)
 		);
@@ -436,7 +433,7 @@ class _CharacterSelectionState extends State<CharacterSelection>
 						Icon
 						(
 							FontAwesomeIcons.userEdit,
-							size: 80,
+							size: 80 * xf,
 							color : Color.fromARGB(230, 240, 180, 100),
 						),
 
@@ -461,7 +458,7 @@ class _CharacterSelectionState extends State<CharacterSelection>
 								),
 								SizedBox
 								(
-									width : x - 110,
+									width : x * xf - 110 * xf ,
 									child :
 									Column
 									(
@@ -496,7 +493,7 @@ class _CharacterSelectionState extends State<CharacterSelection>
 											),
 											SizedBox
 											(
-												width : x - 110,
+												width : x * xf - 110 * xf ,
 												child : Row
 												(
 													crossAxisAlignment: CrossAxisAlignment.end,
@@ -512,7 +509,7 @@ class _CharacterSelectionState extends State<CharacterSelection>
 																(
 																	FontAwesomeIcons.trash,
 																	color: Colors.red,
-																	size : 20,
+																	size : 20 * xf,
 																),
 																onPressed: ()
 																{
@@ -530,7 +527,7 @@ class _CharacterSelectionState extends State<CharacterSelection>
 															icon: Icon
 															(
 																FontAwesomeIcons.ban,
-																size: 20,
+																size: 20 * xf,
 															),
 															onPressed: ()
 															{
@@ -549,7 +546,7 @@ class _CharacterSelectionState extends State<CharacterSelection>
 															(
 																FontAwesomeIcons.check,
 																color: Colors.green,
-																size: 20,
+																size: 20 * xf,
 															),
 
 															onPressed: ()
@@ -567,7 +564,7 @@ class _CharacterSelectionState extends State<CharacterSelection>
 															(
 																FontAwesomeIcons.check,
 																color: Colors.grey,
-																size: 20,
+																size: 20 * xf,
 															),
 														),
 													]
@@ -580,7 +577,7 @@ class _CharacterSelectionState extends State<CharacterSelection>
 						)
 					]
 				),
-				showEditPartyDate(state, characterState),
+				// showEditPartyDate(state, characterState, state.data.partyDate),
 			],
 		);
 	}
@@ -603,7 +600,7 @@ class _CharacterSelectionState extends State<CharacterSelection>
 						Icon
 						(
 							FontAwesomeIcons.userPlus,
-							size  : 80,
+							size  : 80 * xf,
 							color : Color.fromARGB(230, 240, 180, 100),
 						),
 						Column
@@ -622,7 +619,7 @@ class _CharacterSelectionState extends State<CharacterSelection>
 								),
 								SizedBox
 								(
-									width : x - 110,
+									width : x * xf - 110* xf ,
 									child :
 									Column
 									(
@@ -645,7 +642,7 @@ class _CharacterSelectionState extends State<CharacterSelection>
 											),
 											SizedBox
 											(
-												width: x - 110,
+												width: x * xf - 110* xf ,
 												child: Row
 												(
 													crossAxisAlignment: CrossAxisAlignment.end,
@@ -656,7 +653,7 @@ class _CharacterSelectionState extends State<CharacterSelection>
 															icon: Icon
 															(
 																FontAwesomeIcons.ban,
-																size : 20,
+																size : 20 * xf,
 															),
 															onPressed: ()
 															{
@@ -675,7 +672,7 @@ class _CharacterSelectionState extends State<CharacterSelection>
 															(
 																FontAwesomeIcons.check,
 																color : Colors.green,
-																size  : 20,
+																size  : 20 * xf,
 															),
 
 															onPressed: ()
@@ -693,7 +690,7 @@ class _CharacterSelectionState extends State<CharacterSelection>
 															(
 																FontAwesomeIcons.check,
 																color : Colors.grey,
-																size  : 20,
+																size  : 20 * xf,
 															),
 														),
 													]
@@ -706,53 +703,50 @@ class _CharacterSelectionState extends State<CharacterSelection>
 						)
 					]
 				),
-				showEditPartyDate(state, characterState),
+				// no show ;-) It is safer for the workflow
+				// showEditPartyDate( characterState.data.currentMonth),
 			],
 		);
 	}
 	Widget showEditPartyDate
 	(
-		AsyncSnapshot state,
-		AsyncSnapshot characterState
+	//	AsyncSnapshot state,
+	//	AsyncSnapshot characterState,
+		FaerunDate    selectionStart,
 	)
 	{
 		List<Widget> yearDigits  =  Digits(10000);
 		// Months names are always the same, but I have to get them somewhere once.
-		List<Widget> monthDigits =  MonthNames(characterState.data.partyDate.year);
+		List<Widget> monthDigits =  MonthNames(selectionStart.year);
 
 		 partyDateSelection =
-			new DateSelectionBloc(characterState.data.partyDate);
+			new DateSelectionBloc(selectionStart);
 
 		List<Widget> currentDates = DayNames
 		(
-				characterState.data.partyDate.year.months
+			selectionStart.year.months
 			[
-				characterState.data.partyDate.month-1
+				selectionStart.month-1
 			]
 		);
-		currentDay = characterState.data.partyDate.day;
-
 
 		FixedExtentScrollController _yearsScrollController =
 		FixedExtentScrollController
 		(
-			initialItem: characterState.data.partyDate.year.currentYear
+			initialItem: selectionStart.year.currentYear
 		);
 
 		FixedExtentScrollController _monthsScrollController =
 		FixedExtentScrollController
 		(
-			initialItem: characterState.data.partyDate.month-1
+			initialItem: selectionStart.month-1
 		);
 
 		FixedExtentScrollController _daysScrollController =
 		FixedExtentScrollController
 		(
-				initialItem: characterState.data.partyDate.day-1 //currentDay
+				initialItem: selectionStart.day-1 //currentDay
 		);
-
-		CupertinoPicker refreshableDayPicker =
-		dayPicker(currentDates);
 
 		return StreamBuilder
 		(
@@ -766,11 +760,11 @@ class _CharacterSelectionState extends State<CharacterSelection>
 			if (dateState.data==null||dateState.data.status != DateSelectionStates.ready)
 			{
 				partyDateSelection.poke();
-				return Text('Noch nicht');
+				return Text('');
 			}
 			else
 			{
-return StatefulBuilder
+				return StatefulBuilder
 				(
 					builder: (BuildContext context, StateSetter setState)
 						{
@@ -780,138 +774,203 @@ return StatefulBuilder
 								{
 									currentDates = DayNames
 										(dateState.data.selectedMonth);
-									refreshableDayPicker =
-											dayPicker(currentDates);
 								}
 							);
-							return Row
+							return
+								ListTile
 							(
-								mainAxisAlignment: MainAxisAlignment.start,
-								children: <Widget>
-								[
+									/*
+								leading:
+									Icon
+									(
+										FontAwesomeIcons.calendarDay,
+										//size  : 20 * xf,
+										color :  Color.fromARGB(230, 240, 180, 100),
+									),
+									*/
+							title:
+									Column(children: <Widget>[
+							Text
+								(
+									'Aktuelles Datum',
+									style: new TextStyle
+									(
+										color: Colors.black,
+
+										fontSize: 25 * xf,
+										fontFamily: 'NugieRomantic',
+										fontWeight: FontWeight.w300
+									),
+								),
+									Container(width:1, height:5),
+									],),
+							subtitle:
+								Row
+								(
+									mainAxisAlignment: MainAxisAlignment.start,
+									children: <Widget>
+									[
+										Column
+										(
+											mainAxisAlignment: MainAxisAlignment.start,
+
+											crossAxisAlignment: CrossAxisAlignment.center,
+											children: <Widget>
+											[
+												Text
+												(
+													'Jahr',
+													style: new TextStyle
+													(
+														color: Colors.black,
+
+														fontSize: 20 * xf,
+														fontFamily: 'NugieRomantic',
+														fontWeight: FontWeight.w300
+													),
+
+												),
+												SizedBox
+												(
+													width: 50 * xf,
+													height: 140 * xf,
+													child: CupertinoPicker
+													(
+														scrollController: _yearsScrollController,
+														magnification: 1.2,
+
+														children: yearDigits,
+														itemExtent: 20,
+														//height of each item
+														useMagnifier: true,
+
+														squeeze: 1,
+
+														looping: false,
+														onSelectedItemChanged: (int index)
+														{
+															partyDateSelection.dateSelectionEvents.add
+															(
+																new SetYearEvent(newYear: index)
+															);
+															print(index);
+														},
+													),
+												),
+											],
+										),
+
+										Column
+										(
+											mainAxisAlignment: MainAxisAlignment.start,
+
+											crossAxisAlignment: CrossAxisAlignment.center,
+											children: <Widget>
+											[
+												Text
+												(
+													'Monat',
+													style: new TextStyle
+													(
+														color: Colors.black,
+														fontSize: 20 * xf,
+														fontFamily: 'NugieRomantic',
+														fontWeight: FontWeight.w300
+													),
+												),
+												SizedBox
+												(
+													width: 150 * xf,
+													height: 140 * xf,
+													child: CupertinoPicker
+													(
+														scrollController: _monthsScrollController,
+														magnification: 1.2,
+
+														children: monthDigits,
+
+														itemExtent: 20,
+														//height of each item
+														useMagnifier: true,
+														squeeze: 1,
+														looping: true,
+														onSelectedItemChanged: (int index)
+														{
+															partyDateSelection.dateSelectionEvents.add
+															(
+																new SetMonthEvent(newMonth: index+1)
+															);
+
+															print(index);
+														},
+													),
+												),
+											]
+										),
+										Column
+										(
+											mainAxisAlignment: MainAxisAlignment.start,
+											crossAxisAlignment: CrossAxisAlignment.center,
+											children: <Widget>
+											[
+												Text
+												(
+													'Tag',
+													style: new TextStyle
+													(
+														fontSize: 20 * xf,
+														color: Colors.black,
+														fontFamily: 'NugieRomantic',
+														fontWeight: FontWeight.w300
+													),
+												),
+												SizedBox
+												(
+													width: 110 * xf,
+													height: 140 * xf,
+													child:
+													CupertinoPicker
+													(
+														scrollController: _daysScrollController,
+														magnification: 1.2,
+
+														children: currentDates,
+
+														itemExtent: 20, //height of each item
+														useMagnifier: true,
+
+														squeeze: 1,
+
+														looping: true,
+														onSelectedItemChanged: (int index)
+														{
+															partyDateSelection.dateSelectionEvents.add
+															(
+															new SetDayEvent(dayOfMonth: index+1)
+															);
+														},
+													),
+												),
+											]
+										)
+									]
+								),
+							trailing:
 									Column
 									(
-										mainAxisAlignment: MainAxisAlignment.start,
-
-										crossAxisAlignment: CrossAxisAlignment.center,
 										children: <Widget>
 										[
-											Text
+											IconButton
 											(
-												'Jahr',
-												style: new TextStyle
+											icon: Icon
 												(
-													color: Colors.black,
-
-													fontSize: 20,
-													fontFamily: 'NugieRomantic',
-													fontWeight: FontWeight.w300
-												),
-
-											),
-											SizedBox
-											(
-												width: 70,
-												height: 100,
-												child: CupertinoPicker
-												(
-													scrollController: _yearsScrollController,
-													magnification: 1.2,
-
-													children: yearDigits,
-													itemExtent: 20,
-													//height of each item
-													useMagnifier: true,
-
-													squeeze: 1,
-
-													looping: false,
-													onSelectedItemChanged: (int index)
-													{
-														partyDateSelection.dateSelectionEvents.add
-														(
-															new SetYearEvent(newYear: index)
-														);
-														print(index);
-													},
+												FontAwesomeIcons.check,
+												color : Colors.green,
+												size  : 20 * xf,
 												),
 											),
 										],
 									),
-
-									Column
-									(
-										mainAxisAlignment: MainAxisAlignment.start,
-
-										crossAxisAlignment: CrossAxisAlignment.center,
-										children: <Widget>
-										[
-											Text
-											(
-												'Monat',
-												style: new TextStyle
-												(
-													color: Colors.black,
-													fontSize: 20,
-													fontFamily: 'NugieRomantic',
-													fontWeight: FontWeight.w300
-												),
-											),
-											SizedBox
-											(
-												width: 170,
-												height: 100,
-												child: CupertinoPicker
-												(
-													scrollController: _monthsScrollController,
-													magnification: 1.2,
-
-													children: monthDigits,
-
-													itemExtent: 20,
-													//height of each item
-													useMagnifier: true,
-													squeeze: 1,
-													looping: true,
-													onSelectedItemChanged: (int index)
-													{
-														partyDateSelection.dateSelectionEvents.add
-														(
-															new SetMonthEvent(newMonth: index+1)
-														);
-
-														print(index);
-													},
-												),
-											),
-										]
-									),
-									Column
-									(
-										mainAxisAlignment: MainAxisAlignment.start,
-										crossAxisAlignment: CrossAxisAlignment.center,
-										children: <Widget>
-										[
-											Text
-											(
-												'Tag',
-												style: new TextStyle
-												(
-													fontSize: 20,
-													color: Colors.black,
-													fontFamily: 'NugieRomantic',
-													fontWeight: FontWeight.w300
-												),
-											),
-											SizedBox
-											(
-												width: 170,
-												height: 100,
-												child: refreshableDayPicker,
-											),
-										]
-									)
-								]
 							);
 						}
 					);
@@ -934,7 +993,8 @@ return StatefulBuilder
 					textScaleFactor: .8,
 					style: new TextStyle
 					(
-						color: Colors.black,
+							fontSize: 15 * xf,
+							color: Colors.black,
 						fontFamily : 'NugieRomantic',
 						fontWeight: FontWeight.w300
 					),
@@ -960,6 +1020,7 @@ return StatefulBuilder
 						textScaleFactor: .8,
 						style: new TextStyle
 						(
+								fontSize: 15 * xf,
 							color: Colors.black,
 							fontFamily : 'NugieRomantic',
 							fontWeight: FontWeight.w300
@@ -988,6 +1049,7 @@ return StatefulBuilder
 						textScaleFactor: .8,
 						style: new TextStyle
 						(
+								fontSize: 15 * xf,
 							color: Colors.black,
 							fontFamily : 'NugieRomantic',
 							fontWeight: FontWeight.w300
@@ -1000,39 +1062,5 @@ return StatefulBuilder
 		return _dayNames;
 	}
 
-	CupertinoPicker dayPicker(List<Widget> currentDates)
-	{
-
-		if(currentDay>currentDates.length)
-		{
-			currentDay = currentDates.length;
-		}
-		FixedExtentScrollController _daysScrollController =
-		FixedExtentScrollController
-		(
-			initialItem: currentDay
-		);
-		return CupertinoPicker
-		(
-			scrollController: _daysScrollController,
-			magnification: 1.2,
-
-			children: currentDates,
-
-			itemExtent: 20, //height of each item
-			useMagnifier: true,
-
-			squeeze: 1,
-
-			looping: true,
-			onSelectedItemChanged: (int index)
-			{
-				partyDateSelection.dateSelectionEvents.add
-				(
-					new SetDayEvent(dayOfMonth: index+1)
-				);
-			},
-		);
-	}
 
 }

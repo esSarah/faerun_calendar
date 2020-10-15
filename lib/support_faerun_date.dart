@@ -102,7 +102,6 @@ class Year
 			_specialDay = new Day();
 			await _specialDay.initializeDay('Schildtreffen');
 			_month.addSpecialDay(_specialDay);
-			print('Schildtreffen added ' + _month.days.length.toString());
 		}
 		months.add(_month);
 
@@ -142,7 +141,7 @@ class FaerunDate
 
 	int   day = 1;
 	int   month = 1;
-	Year  year  = new Year();
+	Year  year;
 
 	FaerunDate();
 
@@ -175,6 +174,7 @@ class FaerunDate
 
 	Future<bool> loadDate(int year, int month, int day) async
 	{
+		this.year = new Year();
 		if(await testDate(year, month, day))
 		{
 			await this.year.initYear(year);

@@ -135,9 +135,6 @@ class DateSelectionBloc
 		properties.selectedYear  = properties.selectedDate.year;
 		properties.selectedMonth = properties.selectedDate.year.months
 			[properties.selectedDate.month-1];
-		print('Months length in bloc ${properties.selectedDate.year.currentYear} ' +
-				properties.selectedDate.year.months
-		[properties.selectedDate.month-1].days.length.toString());
 		if(properties.selectedMonth.days.length < _currentDayNo - 1)
 		{
 			_currentDayNo = properties.selectedMonth.days.length;
@@ -166,7 +163,7 @@ class DateSelectionBloc
 		properties.selectedYear  = properties.selectedDate.year;
 		properties.selectedMonth = properties.selectedDate.year.months
 		[properties.selectedDate.month-1];
-		if(properties.selectedMonth.days.length < _currentDayNo - 1)
+		if(properties.selectedMonth.days.length < _currentDayNo)
 		{
 			_currentDayNo = properties.selectedMonth.days.length;
 		}
@@ -184,7 +181,7 @@ class DateSelectionBloc
 		properties.status = DateSelectionStates.processing;
 
 		int _currentDayNo = event.dayOfMonth;
-		if(properties.selectedMonth.days.length < _currentDayNo - 1)
+		if(properties.selectedMonth.days.length < _currentDayNo)
 		{
 			_currentDayNo = properties.selectedMonth.days.length;
 		}

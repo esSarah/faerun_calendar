@@ -48,7 +48,9 @@ class CharacterProperties
 	bool       currentNameSuggestionIsValid = false;
 	String     suggestedName                = '';
 	FaerunDate partyDate                    = new FaerunDate();
-	FaerunDate selectedDate                 = new FaerunDate();
+	FaerunDate currentDate                  = new FaerunDate();
+	int        currentDateID                = 0;
+	int        partyDateID                  = 0;
 }
 
 class CharacterData
@@ -144,6 +146,7 @@ class CharacterBloc
 	CharacterChangeProperties characterRefreshroperties      = new CharacterChangeProperties();
 	int                       defaultCharacter               = 1;
 	bool                      characterListIsCurrentlyEdited = false;
+	MainBloc                  main;
 	//endregion
 
 	//region bloc definitions (stream defnitions)
@@ -165,8 +168,9 @@ class CharacterBloc
 
 	//endregion
 
-	CharacterBloc(MainBloc main)
+	CharacterBloc(MainBloc mainBloc)
 	{
+		main = mainBloc;
 		db = main.mainProperties.db;
 		_characterEventController.stream.listen(_mapEventToState);
 		_characterController.add(characterProperties);
@@ -263,9 +267,11 @@ class CharacterBloc
 			SELECT
 			[Character].[ID]      AS ID,
 			[Character].[Name]    AS Name,
+			[CurrentDate].[ID]    AS CurrentDateID,
 			[CurrentDate].[Year]  AS CurrentYear,
 			[CurrentDate].[Month] AS CurrentMonth,
 			[CurrentDate].[Day]   AS CurrentDay,
+			[PartyDate].[ID]      AS PartyDateID,
 			[PartyDate].[Year]    AS PartyYear,
 			[PartyDate].[Month]   AS PartyMonth,
 			[PartyDate].[Day]     AS PartyDay
@@ -287,14 +293,16 @@ class CharacterBloc
 		(
 			(char)
 			{
-
-
 				characterProperties.id            = char[ 'ID'   ];
 				characterProperties.characterName = char[ 'Name' ];
+
+				characterProperties.currentDateID = char[ 'CurrentDateID' ];
 
 				_selectedYear  = char[ 'CurrentYear'  ];
 				_selectedMonth = char[ 'CurrentMonth' ];
 				_selectedDay   = char[ 'CurrentDay'   ];
+
+				characterProperties.partyDateID   = char[ 'PartyDateID'   ];
 
 				_partyYear     = char[ 'PartyYear'  ];
 				_partyMonth    = char[ 'PartyMonth' ];
@@ -302,23 +310,107 @@ class CharacterBloc
 			}
 		);
 
-		await characterProperties.selectedDate.loadDate(_selectedYear, _selectedMonth, _selectedDay);
-		await characterProperties.partyDate.loadDate(_partyYear, _partyMonth, _partyDay);
+		await characterProperties.currentDate.loadDate
+		(
+			_selectedYear,
+			_selectedMonth,
+			_selectedDay
+		);
+		await characterProperties.partyDate.loadDate
+		(
+			_partyYear,
+			_partyMonth,
+			_partyDay
+		);
 
 		return true;
 	}
 
 	Future<int> createCharacter(String newName) async
 	{
+		characterProperties.currentDateID = await db.executeIntScalar
+		(
+				'SELECT MAX(ID) AS[MaxId] FROM [Dates]'
+		);
+		characterProperties.partyDateID  = characterProperties.currentDateID + 1;
+
+		FaerunDate initialDates = main.mainProperties.currentMonth;
+
 		int newID = await db.executeIntScalar
-			(
-				'SELECT MAX(ID) AS[MaxId] FROM [Character]'
+		(
+			'SELECT MAX(ID) AS[MaxId] FROM [Character]'
 		);
 		newID++;
 		await db.read
 		(
-			'INSERT INTO Character (ID, Name) VALUES('
-			+ newID.toString() + ', \'' + db.secure(newName) + '\')'
+			'''
+			INSERT INTO Character 
+			(
+				ID, 
+				Name,
+				CurrentDateID,
+				PartyDateID
+			) 
+			VALUES
+			(
+				$newID, 
+				'${db.secure(newName)}',
+				${characterProperties.currentDateID},
+				${characterProperties.partyDateID},
+			)
+			'''
+		);
+		// now I stll need to save the two dates.
+		await db.read
+		(
+			'''
+			INSERT INTO [Dates] 
+			(
+				[ID], 
+				[TypeID],
+				[Year],
+				[Month],
+				[Day],
+				[Hour],
+				[Minutes]
+			)
+			VALUES
+			(
+				${characterProperties.currentDateID},
+				1,
+				${initialDates.year.currentYear},
+				${initialDates.month},
+				1,
+				0,
+				0		
+			)
+			'''
+		);
+
+		await db.read
+		(
+			'''
+			INSERT INTO [Dates] 
+			(
+				[ID], 
+				[TypeID],
+				[Year],
+				[Month],
+				[Day],
+				[Hour],
+				[Minutes]
+			)
+			VALUES
+			(
+				${characterProperties.partyDateID},
+				2,
+				${initialDates.year.currentYear},
+				${initialDates.month},
+				1,
+				0,
+				0		
+			)
+			'''
 		);
 		return newID;
 	}
@@ -327,11 +419,17 @@ class CharacterBloc
 	{
 		if(byId != defaultCharacter)
 		{
-			await db.read('DELETE FROM Value            WHERE CharacterID = ' +
+
+			await db.read('DELETE FROM [Dates] WHERE ID = ' +
+					characterProperties.currentDateID.toString());
+			await db.read('DELETE FROM [Dates] WHERE ID = ' +
+					characterProperties.partyDateID.toString());
+
+			await db.read('DELETE FROM [Value] WHERE CharacterID = ' +
 				byId.toString());
-			await db.read('DELETE FROM Span WHERE CharacterID = ' +
+			await db.read('DELETE FROM [Span] WHERE CharacterID = ' +
 				byId.toString());
-			await db.read('DELETE FROM Character        WHERE          ID = ' +
+			await db.read('DELETE FROM [Character] WHERE ID = ' +
 				byId.toString());
 		}
 		return true;
@@ -546,7 +644,7 @@ class CharacterBloc
 			[ID] = ${characterProperties.id}
 		)
 		''');
-		characterProperties.selectedDate = newCurrentDate;
+		characterProperties.currentDate = newCurrentDate;
 		return(true);
 	}
 
