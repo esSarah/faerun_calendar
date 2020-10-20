@@ -70,16 +70,11 @@ class LoadIinitialCharacterList extends CharacterEvent
 
 }
 
-class SetPartyDate extends CharacterEvent
+class SetPartyDateEvent extends CharacterEvent
 {
 	final FaerunDate partyDate;
-	SetPartyDate ({@required this.partyDate}) : super([partyDate]);
-}
 
-class SetCurrentDate extends CharacterEvent
-{
-	final FaerunDate currentDate;
-	SetCurrentDate ({@required this.currentDate}) : super([currentDate]);
+	SetPartyDateEvent ({@required this.partyDate}) : super([partyDate]);
 }
 
 class LoadCharacterEvent  extends CharacterEvent
@@ -332,7 +327,8 @@ class CharacterBloc
 		(
 				'SELECT MAX(ID) AS[MaxId] FROM [Dates]'
 		);
-		characterProperties.partyDateID  = characterProperties.currentDateID + 1;
+		characterProperties.currentDateID = characterProperties.currentDateID + 1;
+		characterProperties.partyDateID   = characterProperties.currentDateID + 1;
 
 		FaerunDate initialDates = main.mainProperties.currentMonth;
 
@@ -356,7 +352,7 @@ class CharacterBloc
 				$newID, 
 				'${db.secure(newName)}',
 				${characterProperties.currentDateID},
-				${characterProperties.partyDateID},
+				${characterProperties.partyDateID}
 			)
 			'''
 		);
@@ -507,12 +503,7 @@ class CharacterBloc
 			_finalizeCharacterChange();
 		}
 
-		if(event is SetCurrentDate)
-		{
-			_setCurrentDate(event);
-		}
-
-		if(event is SetPartyDate)
+		if(event is SetPartyDateEvent)
 		{
 			_setPartyDate(event);
 		}
@@ -623,13 +614,6 @@ class CharacterBloc
 		_characterController.add(characterProperties);
 	}
 
-	Future<bool> _setCurrentDate(SetCurrentDate event) async
-	{
-		await setCurrentDate(event.currentDate);
-		_characterController.add(characterProperties);
-		return(true);
-	}
-
 	Future<bool> setCurrentDate(FaerunDate newCurrentDate) async
 	{
 		await db.execute('''
@@ -648,8 +632,9 @@ class CharacterBloc
 		return(true);
 	}
 
-	Future<bool> _setPartyDate(SetPartyDate event) async
+	Future<bool> _setPartyDate(SetPartyDateEvent event) async
 	{
+		await setCurrentDate(event.partyDate);
 		await db.execute('''
 		UPDATE [Dates] SET 
 		[Year]  = ${event.partyDate.year.currentYear},
@@ -663,6 +648,7 @@ class CharacterBloc
 		)
 		''');
 		characterProperties.partyDate = event.partyDate;
+		_characterController.add(characterProperties);
 		return(true);
 	}
 	//endregion

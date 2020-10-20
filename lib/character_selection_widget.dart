@@ -715,14 +715,14 @@ class _CharacterSelectionState extends State<CharacterSelection>
 		FaerunDate    selectionStart,
 	)
 	{
-		List<Widget> yearDigits  =  Digits(10000);
+		List<Widget> yearDigits  =  digits(10000);
 		// Months names are always the same, but I have to get them somewhere once.
-		List<Widget> monthDigits =  MonthNames(selectionStart.year);
+		List<Widget> monthDigits =  monthNames(selectionStart.year);
 
 		 partyDateSelection =
 			new DateSelectionBloc(selectionStart);
 
-		List<Widget> currentDates = DayNames
+		List<Widget> currentDates = dayNames
 		(
 			selectionStart.year.months
 			[
@@ -772,38 +772,33 @@ class _CharacterSelectionState extends State<CharacterSelection>
 							(
 								()
 								{
-									currentDates = DayNames
+									currentDates = dayNames
 										(dateState.data.selectedMonth);
 								}
 							);
-							return
-								ListTile
+							return ListTile
 							(
-									/*
-								leading:
-									Icon
-									(
-										FontAwesomeIcons.calendarDay,
-										//size  : 20 * xf,
-										color :  Color.fromARGB(230, 240, 180, 100),
-									),
-									*/
-							title:
-									Column(children: <Widget>[
-							Text
-								(
-									'Aktuelles Datum',
-									style: new TextStyle
-									(
-										color: Colors.black,
 
-										fontSize: 25 * xf,
-										fontFamily: 'NugieRomantic',
-										fontWeight: FontWeight.w300
-									),
+							title:
+								Column
+								(
+									children: <Widget>
+									[
+										Text
+										(
+											'Aktuelles Datum',
+											style: new TextStyle
+											(
+												color: Colors.black,
+
+												fontSize: 25 * xf,
+												fontFamily: 'NugieRomantic',
+												fontWeight: FontWeight.w300
+											),
+										),
+										Container(width:1, height:5),
+									],
 								),
-									Container(width:1, height:5),
-									],),
 							subtitle:
 								Row
 								(
@@ -880,21 +875,20 @@ class _CharacterSelectionState extends State<CharacterSelection>
 												),
 												SizedBox
 												(
-													width: 150 * xf,
-													height: 140 * xf,
-													child: CupertinoPicker
+													width  : 150 * xf,
+													height : 140 * xf,
+													child  : CupertinoPicker
 													(
-														scrollController: _monthsScrollController,
-														magnification: 1.2,
+														scrollController      : _monthsScrollController,
+														magnification         : 1.2,
 
-														children: monthDigits,
+														children              : monthDigits,
 
-														itemExtent: 20,
-														//height of each item
-														useMagnifier: true,
-														squeeze: 1,
-														looping: true,
-														onSelectedItemChanged: (int index)
+														itemExtent            : 20, //percent
+														useMagnifier          : true,
+														squeeze               : 1,
+														looping               : true,
+														onSelectedItemChanged : (int index)
 														{
 															partyDateSelection.dateSelectionEvents.add
 															(
@@ -909,44 +903,42 @@ class _CharacterSelectionState extends State<CharacterSelection>
 										),
 										Column
 										(
-											mainAxisAlignment: MainAxisAlignment.start,
-											crossAxisAlignment: CrossAxisAlignment.center,
-											children: <Widget>
+											mainAxisAlignment  : MainAxisAlignment.start,
+											crossAxisAlignment : CrossAxisAlignment.center,
+											children           : <Widget>
 											[
 												Text
 												(
 													'Tag',
 													style: new TextStyle
 													(
-														fontSize: 20 * xf,
-														color: Colors.black,
-														fontFamily: 'NugieRomantic',
-														fontWeight: FontWeight.w300
+														fontSize   : 20 * xf,
+														color      : Colors.black,
+														fontFamily : 'NugieRomantic',
+														fontWeight : FontWeight.w300
 													),
 												),
 												SizedBox
 												(
-													width: 110 * xf,
-													height: 140 * xf,
-													child:
+													width  : 110 * xf,
+													height : 140 * xf,
+													child  :
 													CupertinoPicker
 													(
-														scrollController: _daysScrollController,
-														magnification: 1.2,
+														scrollController  : _daysScrollController,
+														magnification     : 1.2,
 
-														children: currentDates,
+														children          : currentDates,
 
-														itemExtent: 20, //height of each item
-														useMagnifier: true,
-
-														squeeze: 1,
-
-														looping: true,
+														itemExtent        : 20, //height of each item
+														useMagnifier      : true,
+														squeeze           : 1,
+														looping           : true,
 														onSelectedItemChanged: (int index)
 														{
 															partyDateSelection.dateSelectionEvents.add
 															(
-															new SetDayEvent(dayOfMonth: index+1)
+																new SetDayEvent(dayOfMonth: index+1)
 															);
 														},
 													),
@@ -956,21 +948,28 @@ class _CharacterSelectionState extends State<CharacterSelection>
 									]
 								),
 							trailing:
-									Column
-									(
-										children: <Widget>
-										[
-											IconButton
+								Column
+								(
+									children: <Widget>
+									[
+										IconButton
+										(
+											icon : Icon
 											(
-											icon: Icon
-												(
 												FontAwesomeIcons.check,
 												color : Colors.green,
 												size  : 20 * xf,
-												),
 											),
-										],
-									),
+											onPressed: ()
+											{
+												_characterBloc.characterEvents.add
+												(
+														new SetPartyDateEvent(partyDate: dateState.data.selectedDate)
+												);
+											},
+										),
+									],
+								),
 							);
 						}
 					);
@@ -979,7 +978,7 @@ class _CharacterSelectionState extends State<CharacterSelection>
 		);
 	}
 
-	List<Widget> Digits(int number)
+	List<Widget> digits(int number)
 	{
 		print('Digits called for ' + number.toString() + ' years');
 		List<Widget> newDigitList = new List<Widget>();
@@ -993,10 +992,10 @@ class _CharacterSelectionState extends State<CharacterSelection>
 					textScaleFactor: .8,
 					style: new TextStyle
 					(
-							fontSize: 15 * xf,
-							color: Colors.black,
+						fontSize   : 15 * xf,
+						color      : Colors.black,
 						fontFamily : 'NugieRomantic',
-						fontWeight: FontWeight.w300
+						fontWeight : FontWeight.w300
 					),
 				),
 			);
@@ -1004,7 +1003,7 @@ class _CharacterSelectionState extends State<CharacterSelection>
 		return newDigitList;
 	}
 
-	List<Widget> MonthNames(Year aYear)
+	List<Widget> monthNames(Year aYear)
 	{
 		print('MonthNames called for year: ' + aYear.currentYear.toString());
 		List<Widget> monthWidgets = new List<Widget>();
@@ -1020,10 +1019,10 @@ class _CharacterSelectionState extends State<CharacterSelection>
 						textScaleFactor: .8,
 						style: new TextStyle
 						(
-								fontSize: 15 * xf,
-							color: Colors.black,
+							fontSize   : 15 * xf,
+							color      : Colors.black,
 							fontFamily : 'NugieRomantic',
-							fontWeight: FontWeight.w300
+							fontWeight : FontWeight.w300
 						),
 					)
 				);
@@ -1032,7 +1031,7 @@ class _CharacterSelectionState extends State<CharacterSelection>
 		return monthWidgets;
 	}
 
-	List<Widget> DayNames(Month aMonth)
+	List<Widget> dayNames(Month aMonth)
 	{
 		print('DayNames called for month ' + aMonth.label +
 				' of length ' + aMonth.days.length.toString());

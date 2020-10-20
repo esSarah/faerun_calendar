@@ -53,8 +53,10 @@ class MonthViewState extends State<MonthView>
 
 	double textBlockHeight = 100;
 
-	Month    _month;
-	MainBloc mainBloc;
+	Month      _month;
+	MainBloc   mainBloc;
+	FaerunDate partyDate;
+	bool       isPartyDateOnPage;
 
 	Widget build(BuildContext context)
 	{
@@ -139,6 +141,17 @@ class MonthViewState extends State<MonthView>
 				}
 				else
 				{
+					partyDate = state.data.characterProperties.partyDate;
+
+					isPartyDateOnPage = true;
+					if(partyDate.year.currentYear!=widget.year)
+					{
+						isPartyDateOnPage = false;
+					}
+					if(partyDate.month!=widget.month+1)
+					{
+						isPartyDateOnPage = false;
+					}
 					x  = state.data.currentWidth;
 					y  = state.data.currentHeight;
 					xy = state.data.multiplyWidthBy;
@@ -400,20 +413,92 @@ class MonthViewState extends State<MonthView>
 		]
 	)
 	{
-		double halfedBreakX = breakX/2;
-		double halfedBreakY = breakY/2;
+		double halfedBreakX = breakX / 2;
+		double halfedBreakY = breakY / 2;
 
 		return Container
 		(
-			child: Column
+			child: Stack
 			(
 				children: <Widget>
 				[
-					SizedBox
+					Column
 					(
-						width  : (direction!=null&&direction=='right')?5:halfedBreakX,
-						height : halfedBreakY,
+						children: <Widget>
+						[
+							SizedBox
+							(
+								width  : (direction!=null&&direction=='right')?5:halfedBreakX,
+								height : halfedBreakY,
+							),
+							Row
+							(
+								children: <Widget>
+								[
+									SizedBox
+									(
+										width  : (direction!=null&&direction=='right')?5:halfedBreakX,
+										height : halfedBreakY,
+									),
+									Hero
+									(
+										tag: 'Day' +
+												year.currentYear.toString() +
+												month.label + index.toString(),
+
+										child: Container
+										(
+											width  :
+												(moreWidth==null)
+											?
+												sheetX
+											:
+												(direction==null)
+												?
+													moreWidth-breakX
+												:
+													(moreWidth-breakX) / 2 - 5,
+
+											height : sheetY,
+											color  : Color.fromARGB(230, 240, 180, 100),
+											child  : InkWell
+											(
+												onTap: ()
+												{
+													Navigator.pushNamed(context, 'Day',  arguments: new router.DayArguments( year, month, index, mainBloc));
+												},
+												child : Center
+												(
+													child : Text
+													(
+														label,
+														style: TextStyle
+														(
+															fontSize   : sheetY*.6,
+															fontFamily : 'NugieRomantic',
+															fontWeight : FontWeight.w300,
+														)
+													),
+												),
+											),
+										),
+									),
+									SizedBox
+									(
+										width  : (direction!=null&&direction=='left')?5:halfedBreakX,
+										height : halfedBreakY,
+									),
+								],
+							),
+							SizedBox
+							(
+								width  : (direction!=null&&direction=='left')?5:halfedBreakX,
+								height : halfedBreakY,
+							),
+						],
 					),
+					isPartyDateOnPage&&partyDate.day-1==index
+				?
 					Row
 					(
 						children: <Widget>
@@ -423,60 +508,35 @@ class MonthViewState extends State<MonthView>
 								width  : (direction!=null&&direction=='right')?5:halfedBreakX,
 								height : halfedBreakY,
 							),
-							Hero
+							Image
 							(
-								tag: 'Day' + year.currentYear.toString() + month.label + index.toString(),
-								child: Container
-								(
-									width  :
-										(moreWidth==null)
-									?
-										sheetX
-									:
-										(direction==null)
+								image  :
+								AssetImage('assets/current.png'),
+								width  :
+								(moreWidth==null)
 										?
-											moreWidth-breakX
+								sheetX
 										:
-											(moreWidth-breakX) / 2 - 5,
+								(direction==null)
+										?
+								moreWidth-breakX
+										:
+								(moreWidth-breakX) / 2 + 5,
 
-									height : sheetY,
-									color  : Color.fromARGB(230, 240, 180, 100),
-									child  : InkWell
-									(
-										onTap: ()
-										{
-											Navigator.pushNamed(context, 'Day',  arguments: new router.DayArguments( year, month, index, mainBloc));
-										},
-										child : Center
-										(
-											child : Text
-											(
-												label,
-												style: TextStyle
-												(
-													fontSize   : sheetY*.6,
-													fontFamily : 'NugieRomantic',
-													fontWeight : FontWeight.w300,
-												)
-											),
-										),
-									),
-								),
-							),
-							SizedBox
-							(
-								width  : (direction!=null&&direction=='left')?5:halfedBreakX,
-								height : halfedBreakY,
+								height : sheetY + 10,
+
 							),
 						],
-					),
+					)
+
+				:
 					SizedBox
 					(
-						width  : (direction!=null&&direction=='left')?5:halfedBreakX,
-						height : halfedBreakY,
+						width  : 1,
+						height : 1
 					),
 				],
-			),
+			)
 		);
 	}
 }
