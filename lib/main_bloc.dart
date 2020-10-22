@@ -89,10 +89,26 @@ class MainDaySelectedEvent extends MainEvent
 	) : super([newDay]);
 }
 
+class MainPartyDateChangedEvent extends MainEvent
+{
+	final FaerunDate newPartyDate;
+	MainPartyDateChangedEvent
+	(
+		{
+			@required this.newPartyDate
+		}
+	) : super([newPartyDate]);
+}
+
+class DateChangeConfirmedEvent extends MainEvent
+{}
+
+
 class MainBloc
 {
 
 	MainProperties mainProperties = new MainProperties();
+
 	final DatabaseManager  db     = new DatabaseManager();
 	CharacterBloc          characterBloc;
 	StreamSubscription     characterBlocSubscription;
@@ -239,6 +255,14 @@ class MainBloc
 		{
 			await _mapEventToInitialze(event);
 		}
+		if(event is MainPartyDateChangedEvent)
+		{
+			await _mapEventToPartyDateChanged(event);
+		}
+		if(event is DateChangeConfirmedEvent)
+		{
+			await _mapDateChangeConfirmed(event);
+		}
 		print(mainProperties.status.toString());
 		return true;
 	}
@@ -334,6 +358,21 @@ class MainBloc
 		return true;
 	}
 
+	Future<bool> _mapEventToPartyDateChanged(MainPartyDateChangedEvent event) async
+	{
+		mainProperties.currentMonth = event.newPartyDate;
+		mainProperties.status = mainStates.dateChangeIsPending;
+		_mainController.add(mainProperties);
+		return true;
+	}
+
+	Future<bool> _mapDateChangeConfirmed(DateChangeConfirmedEvent event) async
+	{
+		mainProperties.status = mainStates.isUserSelected;
+		_mainController.add(mainProperties);
+		return true;
+	}
+
 	Future<bool> _mapEventToInitialze
 	(
 		MainInitializeEvent mainInitializeEvent
@@ -353,7 +392,6 @@ class MainBloc
 		return true;
 	}
 
-	@override
 	void dispose()
 	{
 		characterBlocSubscription.cancel();

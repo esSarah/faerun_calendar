@@ -142,7 +142,8 @@ class MonthViewState extends State<MonthView>
 				else
 				{
 					partyDate = state.data.characterProperties.partyDate;
-
+					print('Party Date in Month Widgets ${partyDate.year.currentYear} ${partyDate.month}  ${partyDate.day}');
+					print('Shown year ${widget.year} ${widget.month+1}');
 					isPartyDateOnPage = true;
 					if(partyDate.year.currentYear!=widget.year)
 					{
@@ -152,6 +153,7 @@ class MonthViewState extends State<MonthView>
 					{
 						isPartyDateOnPage = false;
 					}
+					print('Party is on Page: $isPartyDateOnPage');
 					x  = state.data.currentWidth;
 					y  = state.data.currentHeight;
 					xy = state.data.multiplyWidthBy;

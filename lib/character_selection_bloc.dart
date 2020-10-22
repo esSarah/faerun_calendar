@@ -628,6 +628,7 @@ class CharacterBloc
 			[ID] = ${characterProperties.id}
 		)
 		''');
+		print('-currentDate updated in db');
 		characterProperties.currentDate = newCurrentDate;
 		return(true);
 	}
@@ -649,6 +650,14 @@ class CharacterBloc
 		''');
 		characterProperties.partyDate = event.partyDate;
 		_characterController.add(characterProperties);
+		main.mainEvents.add
+		(
+			new MainPartyDateChangedEvent
+			(
+				newPartyDate: characterProperties.partyDate
+			)
+		);
+		print('-partyDate updated in db');
 		return(true);
 	}
 	//endregion

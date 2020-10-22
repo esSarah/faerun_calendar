@@ -980,7 +980,6 @@ class _CharacterSelectionState extends State<CharacterSelection>
 
 	List<Widget> digits(int number)
 	{
-		print('Digits called for ' + number.toString() + ' years');
 		List<Widget> newDigitList = new List<Widget>();
 		for (int currentDigit = 0; currentDigit < number; currentDigit++)
 		{
@@ -1005,7 +1004,6 @@ class _CharacterSelectionState extends State<CharacterSelection>
 
 	List<Widget> monthNames(Year aYear)
 	{
-		print('MonthNames called for year: ' + aYear.currentYear.toString());
 		List<Widget> monthWidgets = new List<Widget>();
 		aYear.months.forEach
 		(
@@ -1033,8 +1031,6 @@ class _CharacterSelectionState extends State<CharacterSelection>
 
 	List<Widget> dayNames(Month aMonth)
 	{
-		print('DayNames called for month ' + aMonth.label +
-				' of length ' + aMonth.days.length.toString());
 		List<Widget> _dayNames = new List<Widget>();
 		aMonth.days.forEach
 		(
@@ -1057,7 +1053,6 @@ class _CharacterSelectionState extends State<CharacterSelection>
 				);
 			}
 		);
-		print('Daynames done');
 		return _dayNames;
 	}
 

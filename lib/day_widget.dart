@@ -66,25 +66,25 @@ class _DayWidget extends State<DayWidget>
 					return Scaffold
 					(
 						body: Column
-							(
-								children: <Widget>
-								[
-									Container
+						(
+							children: <Widget>
+							[
+								Container
+								(
+									width  : 1.0,
+									height : 30.0 * xy,
+								),
+								Stack
+								(
+									children: <Widget>
+									[
+										Column
 										(
-										width  : 1.0,
-										height : 30.0 * xy,
-									),
-									Stack
-									(
 											children: <Widget>
 											[
-												Column
-												(
-												children: <Widget>
-													[
-													Container(height: 100 * xy, width : 1,),
+												Container(height: 100 * xy, width : 1,),
 												Image
-													(
+												(
 													image          :
 													AssetImage(state.data.backgroundImage),
 													width          : x * xy,
