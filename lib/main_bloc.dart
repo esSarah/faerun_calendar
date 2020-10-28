@@ -16,7 +16,6 @@ enum mainStates
 class MainProperties
 {
 	FaerunDate currentMonth = new FaerunDate();
-	//FaerunDate partyDate    = new FaerunDate();
 
 	double currentWidth    = 0;
 	double currentHeight   = 0;
@@ -168,8 +167,6 @@ class MainBloc
 						CharacterChangeStates.characterEstablished
 				)
 				{
-					// masterProperties.characterProperties = characterState;
-					// needs a lot more of adjustment if this doesn't work instead:
 					mainProperties.characterProperties =
 						characterBloc.characterProperties;
 					await setUserSelected();
@@ -202,7 +199,7 @@ class MainBloc
 	{
 		int currentUserID = await db.executeIntScalar
 		(
-				'''
+			'''
 			SELECT 
 				[ValueInteger] AS No FROM [Value] 
 			WHERE 
@@ -360,7 +357,25 @@ class MainBloc
 
 	Future<bool> _mapEventToPartyDateChanged(MainPartyDateChangedEvent event) async
 	{
-		mainProperties.currentMonth = event.newPartyDate;
+		print('_mapEventToPartyDateChanged ' + event.newPartyDate.day.toString());
+		// Bug hypothesis: Actually is a referenz, so each change to
+		// Current Month (the one on display)
+		// now also effects the Party Date of the character
+		// (which is the one marked on the overview)
+
+		// mainProperties.currentMonth = event.newPartyDate;
+
+		// reinitialize with party date instance instead
+		await mainProperties.currentMonth.year.initYear
+		(
+			event.newPartyDate.year.currentYear
+		);
+		mainProperties.currentMonth.month = event.newPartyDate.month;
+		mainProperties.currentMonth.day = 1;
+		// Hypothesis tested successfully. I will keep this comments as a
+		// warning for my future self and other dear readers.
+		// This bug did cost me more than a week to find and squish.
+
 		mainProperties.status = mainStates.dateChangeIsPending;
 		_mainController.add(mainProperties);
 		return true;

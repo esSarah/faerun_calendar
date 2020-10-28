@@ -285,19 +285,6 @@ class DatabaseManager
 		return true;
 	}
 
-
-	/*
-  String datetimeFormat(DateTime DateToInsert)
-  {
-    String correctFormatForInsertion = '';
-
-    correctFormatForInsertion =
-        correctFormatForInsertion + '\'' + DateToInsert.year.toString() + '-' + DateToInsert.
-
-  }
-
-
-   */
 	void onCreateFunc(Database db, int version) async
 	{
 		String databaseStructur = '''

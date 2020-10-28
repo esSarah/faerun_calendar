@@ -125,7 +125,7 @@ class _MyHomePageState extends State<MyHomePage>
             proportions.monthViewY = y - 100;
 
             return Scaffold
-              (
+            (
               body: Column
                 (
                 children: <Widget>
@@ -181,8 +181,8 @@ class _MyHomePageState extends State<MyHomePage>
                             );
 
                             mainBloc.mainEvents.add
-                              (
-                                DateChangeConfirmedEvent()
+                            (
+                              DateChangeConfirmedEvent()
                             );
                           }
                           if(state.data.status == mainStates.isUserSelected)
@@ -244,13 +244,6 @@ class _MyHomePageState extends State<MyHomePage>
           }
         }
     );
-
-    /* Experimental code that didn't work out but I might come back to
-    if(currentCarouselMonth!=(mainBloc.mainProperties.currentYear*12+mainBloc.mainProperties.currentMonth))
-    {
-      blocCarouselController.jumpToPage(mainBloc.mainProperties.currentYear*12+mainBloc.mainProperties.currentMonth);
-    }*/
-
   }
 }
 
